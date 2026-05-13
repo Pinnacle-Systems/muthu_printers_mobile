@@ -1,0 +1,23 @@
+{
+  "name": "@repo/errors",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "scripts": {
+    "build": "node -e \"console.log('No build step for JavaScript package')\"",
+    "lint": "eslint .",
+    "typecheck": "node -e \"console.log('No typecheck step for JavaScript package')\"",
+    "test": "vitest run",
+    "clean": "rimraf dist .turbo"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "workspace:*",
+    "eslint": "^9.17.0",
+    "rimraf": "^6.0.1",
+    "vitest": "^2.1.8"
+  }
+}

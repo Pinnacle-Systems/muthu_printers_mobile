@@ -1,0 +1,1 @@
+C:\Users\kalas\Workspace\muthu_printers_mobile\apps\mobile\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt

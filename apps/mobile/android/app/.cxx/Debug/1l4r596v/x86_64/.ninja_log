@@ -1,0 +1,7 @@
+# ninja log v5
+3	73	0	C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/x86_64/CMakeFiles/cmake.verify_globs	792aaaae9037f2a2
+9	3151	8004015186854609	CMakeFiles/appmodules.dir/bc6b8cf724fc3c14c44b42ff83aef44a/apps/mobile/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	462a4441e738d84d
+0	3433	8004015189625733	CMakeFiles/appmodules.dir/OnLoad.cpp.o	f7b8f986151967a6
+3434	3538	8004015190724431	C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/build/intermediates/cxx/Debug/1l4r596v/obj/x86_64/libappmodules.so	ac03366937d15531
+2	21	0	C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/x86_64/CMakeFiles/cmake.verify_globs	792aaaae9037f2a2
+2	30	0	C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/x86_64/CMakeFiles/cmake.verify_globs	792aaaae9037f2a2

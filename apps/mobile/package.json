@@ -1,0 +1,35 @@
+{
+  "name": "@app/mobile",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "react-native start",
+    "android": "react-native run-android",
+    "ios": "react-native run-ios",
+    "build": "node -e \"console.log('No build step for React Native JavaScript app')\"",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "clean": "rimraf dist .turbo"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.29.0",
+    "@repo/api-client": "workspace:*",
+    "@repo/logger": "workspace:*",
+    "react": "^19.1.0",
+    "react-native": "^0.81.1"
+  },
+  "devDependencies": {
+    "@react-native/babel-preset": "^0.81.1",
+    "@react-native/community-cli-plugin": "^0.81.1",
+    "@react-native/gradle-plugin": "^0.81.1",
+    "@react-native/metro-config": "^0.81.1",
+    "@react-native-community/cli": "latest",
+    "@repo/eslint-config": "workspace:*",
+    "eslint": "^9.17.0",
+    "react-test-renderer": "^19.1.0",
+    "rimraf": "^6.0.1",
+    "vitest": "^2.1.8"
+  }
+}
