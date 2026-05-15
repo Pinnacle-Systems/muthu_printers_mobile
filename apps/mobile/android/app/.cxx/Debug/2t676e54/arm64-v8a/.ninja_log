@@ -1,0 +1,8 @@
+# ninja log v5
+4146	4320	8005240958276042	D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/build/intermediates/cxx/Debug/2t676e54/obj/arm64-v8a/libappmodules.so	b610cb0515179e90
+1	24	0	D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/arm64-v8a/CMakeFiles/cmake.verify_globs	a378cd9bc3b808c2
+71	4145	8005240956488139	CMakeFiles/appmodules.dir/OnLoad.cpp.o	7068690816bf313d
+76	3921	8005240954245125	CMakeFiles/appmodules.dir/9c542ef0e2e3450351814533c7d15a80/android/app/build/generated/autolinking/src/main/jni/autolinking.cpp.o	ed554d995a3a7fb9
+28	520	8005407806022673	build.ninja	127287c1fa08f7d1
+0	7	0	clean	6c4c2496c4e05a28
+2	186	0	D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/arm64-v8a/CMakeFiles/cmake.verify_globs	a378cd9bc3b808c2

@@ -1,0 +1,3 @@
+D:\Project\React\Cli\muthu_printer_mobile\muthu_printers_mobile\apps\mobile\node_modules\react-native-safe-area-context\android\src\main\jni\CMakeLists.txt
+D:\Project\React\Cli\muthu_printer_mobile\muthu_printers_mobile\apps\mobile\node_modules\react-native-screens\android\src\main\jni\CMakeLists.txt
+D:\Project\React\Cli\muthu_printer_mobile\muthu_printers_mobile\apps\mobile\node_modules\react-native\ReactAndroid\cmake-utils\default-app-setup\CMakeLists.txt

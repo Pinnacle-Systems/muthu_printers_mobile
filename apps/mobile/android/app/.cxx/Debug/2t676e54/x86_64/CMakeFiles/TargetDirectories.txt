@@ -1,0 +1,9 @@
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/CMakeFiles/appmodules.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/CMakeFiles/edit_cache.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/CMakeFiles/rebuild_cache.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/safeareacontext_autolinked_build/CMakeFiles/react_codegen_safeareacontext.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/safeareacontext_autolinked_build/CMakeFiles/edit_cache.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/safeareacontext_autolinked_build/CMakeFiles/rebuild_cache.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/rnscreens_autolinked_build/CMakeFiles/react_codegen_rnscreens.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/rnscreens_autolinked_build/CMakeFiles/edit_cache.dir
+D:/Project/React/Cli/muthu_printer_mobile/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/2t676e54/x86_64/rnscreens_autolinked_build/CMakeFiles/rebuild_cache.dir
