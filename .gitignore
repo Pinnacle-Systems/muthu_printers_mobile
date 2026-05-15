@@ -16,3 +16,11 @@ Thumbs.db
 
 *.log
 pnpm-debug.log*
+
+# Android
+.cxx/
+*.keystore
+!debug.keystore
+
+# Codegen
+generated/

@@ -1,3 +1,0 @@
-C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/armeabi-v7a/CMakeFiles/appmodules.dir
-C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/armeabi-v7a/CMakeFiles/edit_cache.dir
-C:/Users/kalas/Workspace/muthu_printers_mobile/apps/mobile/android/app/.cxx/Debug/1l4r596v/armeabi-v7a/CMakeFiles/rebuild_cache.dir
