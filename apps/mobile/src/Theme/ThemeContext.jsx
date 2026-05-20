@@ -1,15 +1,20 @@
-import { createContext } from "react"
+import { createContext, useContext, useEffect } from "react"
 import  {theme} from "./index"
+import {useThemeStorage} from "../Utils/Storage/useThemestorage"
 
 
 const Themecontext = createContext(theme)
 
-export const ThemeContextProvider = ({children})=>{
+ const ThemeContextProvider = ({children})=>{
+      const {thememode,setthememode} = useThemeStorage()
 
+      const Storage_mode = {theme:theme , mode : {thememode,setthememode} }
     return (
-       <Themecontext.Provider value={theme}>{children}</Themecontext.Provider>
+       <Themecontext.Provider value={Storage_mode} >{children}</Themecontext.Provider>
     )
 }
 
 
 export const useTheme = () => useContext(Themecontext);
+
+export default ThemeContextProvider

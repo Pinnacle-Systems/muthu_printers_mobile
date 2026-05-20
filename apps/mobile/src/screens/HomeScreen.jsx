@@ -5,7 +5,7 @@ import { Screen } from "../components/Screen.jsx";
 import { Text } from "../components/Text.jsx";
 import { api } from "../services/api.js";
 
-export const HomeScreen = () => {
+export const HomeScreen = ({ navigation } = {}) => {
   const [health, setHealth] = useState(null);
   const [error, setError] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +53,7 @@ export const HomeScreen = () => {
           </View>
         ) : null}
 
+        <Button title="Open dummy page" onPress={() => navigation?.navigate("Dummy")} />
         <Button title="Retry" onPress={loadHealth} />
       </View>
     </Screen>
