@@ -1,4 +1,4 @@
 import Config from 'react-native-config';
 
 
-export const  APIURL = Config.APIURL
+export const  APIURL = Config.API_URL

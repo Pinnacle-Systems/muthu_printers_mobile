@@ -6,13 +6,18 @@ import {
   StyleSheet,
   StatusBar,
   ScrollView,
+  Alert,
 } from 'react-native';
-import { User, Lock, ArrowRight } from 'lucide-react-native';
+import { User, Lock, ArrowRight, UserRoundSearchIcon } from 'lucide-react-native';
 import { SafeAreaView } from "react-native-safe-area-context";
 import AppButton   from '../components/AppButton';
 import AppInput    from '../components/AppInput';
 import AppCheckbox from '../components/AppCheckbox';
 import useThemeProvider from '../Theme/useThemeProvider';
+import useUserHooks from '../services/hooks/useUsershooks';
+import { logError, logEvent, setUserContext } from '../Utils/crashLogger';
+import { APIURL } from '../Utils/Storage/DotenvFinder';
+import {createMMKV} from "../Utils/Storage/mmkv"
 
 const LoginScreen = ({ navigation }) => {
   const [username,   setUsername]   = useState('');
@@ -20,6 +25,8 @@ const LoginScreen = ({ navigation }) => {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading,    setLoading]    = useState(false);
   const [errors,     setErrors]     = useState({ username: '', password: '' });
+
+  const {AuthundicateApi} = useUserHooks()
 
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, typography, radius } = theme;
@@ -40,7 +47,7 @@ const LoginScreen = ({ navigation }) => {
     if (!password) {
       newErrors.password = 'Password is required';
       valid = false;
-    } else if (password.length < 6) {
+    } else if (password.length < 4) {
       newErrors.password = 'Password must be at least 6 characters';
       valid = false;
     }
@@ -49,14 +56,47 @@ const LoginScreen = ({ navigation }) => {
     return valid;
   };
 
-  const handleLogin = () => {
-    if (!validate()) return;
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      // navigation.navigate('Home');
-    }, 1500);
-  };
+const handleLogin = async () => {
+  if (!validate()) return;      
+  setLoading(true);
+
+  try {
+    
+    logEvent(`Login attempt: ${username}`); 
+
+    const auth_api = await AuthundicateApi({
+      username,
+      password,
+     })?.unwrap();
+     const {statusCode,message, token, userInfo} = auth_api || {}
+
+     if(statusCode == 1){
+      Alert.alert('Login Failed',   message || 'Something went wrong');
+     }else { 
+      createMMKV("access_token", token);
+      createMMKV("refresh_token", token);
+       createMMKV("user_profile", userInfo);
+     }
+    
+    setUserContext({
+      id:       auth_api?.user?.id || 1001,
+      username: auth_api?.user?.username || username,
+      role:     auth_api?.user?.role || 'staff',
+    });
+
+    logEvent('Login success');
+    navigation.navigate('Home');
+
+  } catch (error) {
+    logError(error, 'AUTH_ERROR', {
+      screen:   'LoginScreen',
+      username: username,
+    });
+    Alert.alert('Login Failed'+APIURL,error?.error|| 'Something went wrong');
+  } finally {
+    setLoading(false);  
+  }
+};
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: c.background }]}>
@@ -114,7 +154,7 @@ const LoginScreen = ({ navigation }) => {
               color: c.textMuted,
               fontSize: typography.sm.fontSize,
             }]}>
-              Welcome back to Muthu Printers
+              Welcome back to Muthu Printers 
             </Text>
           </View>
 
