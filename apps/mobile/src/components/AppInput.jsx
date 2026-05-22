@@ -12,6 +12,8 @@ import useThemeProvider from '../Theme/useThemeProvider';
  *  onRightIconPress - press handler for right icon
  *  error            - error message string shown below input
  *  isPassword       - enables show/hide password toggle
+ *  widthPercent     - input width as % of screen e.g. 90 → wp(90)
+ *                     omit for full width (default behaviour)
  *  containerStyle   - extra style for wrapper View
  *  ...rest          - all standard TextInput props
  */
@@ -22,6 +24,7 @@ const AppInput = ({
   onRightIconPress,
   error,
   isPassword = false,
+  widthPercent,
   containerStyle,
   ...rest
 }) => {
@@ -29,16 +32,22 @@ const AppInput = ({
   const [isFocused, setIsFocused]       = useState(false);
 
   const { current_theme: c, theme } = useThemeProvider();
-  const { spacing, typography, radius } = theme;
+  const { spacing, typography, radius, Screens } = theme;
+  const { wp } = Screens;
 
-  // ── Derived border color: error > focused > default ──────────────────────
+  // ── Resolved width ──────────────────────────────────────────────────────
+  // widthPercent=90  →  wp(90)  →  e.g. 342px
+  // widthPercent omitted  →  undefined  →  full width
+  const resolvedWidth = widthPercent ? wp(widthPercent) : undefined;
+
+  // ── Derived border color: error > focused > default ────────────────────
   const borderColor = !!error
     ? c.error
     : isFocused
     ? c.primary
     : c.border;
 
-  // ── Icon color shifts on focus ────────────────────────────────────────────
+  // ── Icon color shifts on focus ──────────────────────────────────────────
   const iconColor = isFocused ? c.textMuted : c.placeHolder_text;
 
   return (
@@ -49,11 +58,14 @@ const AppInput = ({
         style={[
           styles.inputWrap,
           {
-            backgroundColor:  c.surface,
+            backgroundColor:   c.surface,
             borderColor,
-            borderRadius:     radius.md,
+            borderRadius:      radius.md,
             paddingHorizontal: spacing.md,
-            height:           50,
+            height:            50,
+            // ✅ apply wp width when provided, otherwise stretch full width
+            width:     resolvedWidth,
+            alignSelf: resolvedWidth ? 'center' : 'auto',
           },
         ]}>
 
@@ -65,9 +77,9 @@ const AppInput = ({
           style={[
             styles.input,
             {
-              fontSize:  typography.body.fontSize,
+              fontSize:   typography.body.fontSize,
               fontWeight: typography.body.fontWeight,
-              color:     c.text,
+              color:      c.text,
             },
           ]}
           placeholder={placeholder}

@@ -17,7 +17,7 @@ import useThemeProvider from '../Theme/useThemeProvider';
 import useUserHooks from '../services/hooks/useUsershooks';
 import { logError, logEvent, setUserContext } from '../Utils/crashLogger';
 import { APIURL } from '../Utils/Storage/DotenvFinder';
-import {createMMKV} from "../Utils/Storage/mmkv"
+import {accessTokenStorage, createMMKV, refreshTokenStorage, userProfileStorage} from "../Utils/Storage/mmkv"
 
 const LoginScreen = ({ navigation }) => {
   const [username,   setUsername]   = useState('');
@@ -30,6 +30,10 @@ const LoginScreen = ({ navigation }) => {
 
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, typography, radius } = theme;
+
+  
+
+
 
   // ── Validation ────────────────────────────────────────────────────────────
   const validate = () => {
@@ -57,31 +61,30 @@ const LoginScreen = ({ navigation }) => {
   };
 
 const handleLogin = async () => {
-  if (!validate()) return;      
+  if (!validate()) return;
   setLoading(true);
 
   try {
-    
-    logEvent(`Login attempt: ${username}`); 
+    logEvent(`Login attempt: ${username}`);
 
-    const auth_api = await AuthundicateApi({
-      username,
-      password,
-     })?.unwrap();
-     const {statusCode,message, token, userInfo} = auth_api || {}
+    const auth_api = await AuthundicateApi({ username, password })?.unwrap();
+    const { statusCode, message, token, refresh_token, userInfo } = auth_api || {};
 
-     if(statusCode == 1){
-      Alert.alert('Login Failed',   message || 'Something went wrong');
-     }else { 
-      createMMKV("access_token", token);
-      createMMKV("refresh_token", token);
-       createMMKV("user_profile", userInfo);
-     }
-    
+    if (statusCode == 1) {
+      Alert.alert('Login Failed', message || 'Something went wrong');
+      return;
+    }
+
+    // ── Persist session ──────────────────────────────────────────
+    accessTokenStorage.set(token);
+    refreshTokenStorage.set(refresh_token ?? token);
+    userProfileStorage.set(userInfo);
+
+    // ── Crash logger context ─────────────────────────────────────
     setUserContext({
-      id:       auth_api?.user?.id || 1001,
-      username: auth_api?.user?.username || username,
-      role:     auth_api?.user?.role || 'staff',
+      id:       userInfo?.id       || 1001,
+      username: userInfo?.username || username,
+      role:     userInfo?.role     || 'staff',
     });
 
     logEvent('Login success');
@@ -90,16 +93,16 @@ const handleLogin = async () => {
   } catch (error) {
     logError(error, 'AUTH_ERROR', {
       screen:   'LoginScreen',
-      username: username,
+      username,
     });
-    Alert.alert('Login Failed'+APIURL,error?.error|| 'Something went wrong');
+    Alert.alert('Login Failed', JSON?.stringify(error) || 'Something went wrong');
   } finally {
-    setLoading(false);  
+    setLoading(false);
   }
 };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: c.background }]}>
+    <View style={[styles.safeArea, { backgroundColor: c.background }]}>
       <StatusBar
         barStyle={c.background === '#FFFFFF' ? 'dark-content' : 'light-content'}
         backgroundColor={c.background}
@@ -236,7 +239,7 @@ const handleLogin = async () => {
         {/* ── END CHILD 2 ────────────────────────────────────────────────── */}
 
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

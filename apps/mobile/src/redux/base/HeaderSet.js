@@ -2,6 +2,17 @@
 import DeviceInfo from 'react-native-device-info';
 import { Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
+import { createMMKV } from '../../Utils/Storage/mmkv';
+
+
+
+// ─── Token Store (outside function, created once) ────────────────
+const AccessTokenStore  = createMMKV("access_token",  "");
+const RefreshTokenStore = createMMKV("refresh_token", "");
+
+// ─── Token Helpers ───────────────────────────────────────────────
+export const getAccessToken  = () => AccessTokenStore.get();
+export const getRefreshToken = () => RefreshTokenStore.get();
 
 export async function SetHeader(headers, options = {}) {
   const { isLoginRequest = false, method = 'GET' } = options;
@@ -46,14 +57,16 @@ export async function SetHeader(headers, options = {}) {
 
     if (!isLoginRequest) {
       try {
-        // const stored = await AsyncStorage.getItem('userName');
-        // if (stored) {
-        //   const user = JSON.parse(stored);
-        //   if (user?.GCOMPCODE) headers.set('X-Comp-Code', user.GCOMPCODE);
-        //   if (user?.userName)  headers.set('X-User-Ref', user.userName);
-        //   if (user?.Id)        headers.set('X-Client-Ref', user.Id);
-        // }
-      } catch (_) {}
+        const token = getAccessToken(); // ← read from MMKV
+
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`); // ← sent to Express backend
+        } else {
+          console.warn('[SetHeader] No access token found');
+        }
+      } catch (_) {
+        console.warn('[SetHeader] Failed to attach auth token');
+      }
     }
 
   } catch (error) {

@@ -1,5 +1,19 @@
-import React from "react";
+import React, { createContext } from "react";
+import { createMMKVStringHook } from "../../Utils/Storage/mmkv";
+import { Alert } from "react-native";
 
-export const AppProviders = ({ children }) => {  
-  return <>{children}</>;
+export const AuthContext = createContext(null);
+
+const useAccessToken = createMMKVStringHook("access_token", "");
+
+export const AppProviders = ({ children }) => {
+  const { value: isToken, set: setToken, remove: removeToken } = useAccessToken();
+
+  
+
+  return (
+    <AuthContext.Provider value={{ isToken, setToken, removeToken }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

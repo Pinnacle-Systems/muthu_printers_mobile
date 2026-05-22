@@ -1,12 +1,18 @@
 // storage/mmkv.js
-import { MMKV } from "react-native-mmkv";
-import { useMMKVString, useMMKVBoolean, useMMKVNumber } from "react-native-mmkv";
+import { MMKV, useMMKVString, useMMKVBoolean, useMMKVNumber } from "react-native-mmkv";
+
+if (!MMKV) {
+  throw new Error(
+    "MMKV native module is undefined. " +
+    "Ensure the app is rebuilt after installing react-native-mmkv. " +
+    "Expo Go is not supported — use a dev build."
+  );
+}
 
 // ─── Core Instance ───────────────────────────────────────────────
 export const storage = new MMKV({
   id: "app-storage",
 });
-
 
 export const createMMKV = (key, defaultValue) => {
   const set = (value) => {
@@ -35,9 +41,9 @@ export const createMMKV = (key, defaultValue) => {
   return { set, get, remove, exists, key };
 };
 
-
 export const createMMKVStringHook = (key, fallback = "") => () => {
-  const [value, setValue] = useMMKVString(key);
+  // v3: pass storage instance as second arg
+  const [value, setValue] = useMMKVString(key, storage);
   return {
     value: value ?? fallback,
     set: (v) => setValue(v),
@@ -47,7 +53,8 @@ export const createMMKVStringHook = (key, fallback = "") => () => {
 };
 
 export const createMMKVBooleanHook = (key, fallback = false) => () => {
-  const [value, setValue] = useMMKVBoolean(key);
+  // v3: pass storage instance as second arg
+  const [value, setValue] = useMMKVBoolean(key, storage);
   return {
     value: value ?? fallback,
     set: (v) => setValue(v),
@@ -58,7 +65,8 @@ export const createMMKVBooleanHook = (key, fallback = false) => () => {
 };
 
 export const createMMKVNumberHook = (key, fallback = 0) => () => {
-  const [value, setValue] = useMMKVNumber(key);
+  // v3: pass storage instance as second arg
+  const [value, setValue] = useMMKVNumber(key, storage);
   return {
     value: value ?? fallback,
     set: (v) => setValue(v),
@@ -69,6 +77,10 @@ export const createMMKVNumberHook = (key, fallback = 0) => () => {
   };
 };
 
-
 export const clearAllStorage = () => storage.clearAll();
 export const getAllKeys = () => storage.getAllKeys();
+
+
+export const accessTokenStorage  = createMMKV("access_token",  "");
+export const refreshTokenStorage = createMMKV("refresh_token", "");
+export const userProfileStorage  = createMMKV("user_profile",  null);

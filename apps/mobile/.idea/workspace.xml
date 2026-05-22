@@ -5,12 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="8ede4869-dacd-4fbe-ae11-d5f1a45130b2" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/android/app/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/app/build.gradle" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/android/build.gradle" beforeDir="false" afterPath="$PROJECT_DIR$/android/build.gradle" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Theme/index.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Theme/index.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/Utils/Storage/mmkv.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/Utils/Storage/mmkv.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/Pages.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/Pages.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/navigation/Navigation.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/navigation/Navigation.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/providers/AppProviders.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/providers/AppProviders.jsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/Text.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/Text.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/redux/base/HeaderSet.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/redux/base/HeaderSet.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/redux/slice/LoginRtk.js" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/redux/store.js" beforeDir="false" afterPath="$PROJECT_DIR$/src/redux/store.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/screens/HomeScreen.jsx" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/src/screens/LoginScreen.jsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/screens/LoginScreen.jsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../pnpm-lock.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/../../pnpm-lock.yaml" afterDir="false" />
     </list>
@@ -25,10 +28,10 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../.." />
   </component>
-  <component name="ProjectColorInfo"><![CDATA[{
-  "customColor": "",
-  "associatedIndex": 5
-}]]></component>
+  <component name="ProjectColorInfo">{
+  &quot;customColor&quot;: &quot;&quot;,
+  &quot;associatedIndex&quot;: 5
+}</component>
   <component name="ProjectId" id="3E1liZusBrlqPoPTOe1Nihg1HH6" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -38,6 +41,7 @@
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.cidr.known.project.marker": "true",
+    "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.readMode.enableVisualFormatting": "true",
     "cf.first.check.clang-format": "false",
     "cidr.known.project.marker": "true",
