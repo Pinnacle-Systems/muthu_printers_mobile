@@ -10,19 +10,19 @@ const JOBCARD_API = createApi({
 
     // GET /jobcards
     getJobCards: builder.query({
-      query: () => ({ url: "/jobCard", method: "GET" }),
+      query: (params) => ({ url: "/jobCard", method: "GET",params }),
       providesTags: ["JobCard"],
     }),
 
     // GET /jobcards/jobCardList
     getJobCardList: builder.query({
-      query: () => ({ url: "/jobCard/jobCardList", method: "GET" }),
+      query: (params) => ({ url: "/jobCard/get_mob_joblist", method: "GET",params }),
       providesTags: ["JobCard"],
     }),
 
     // GET /jobcards/:id
     getJobCard: builder.query({
-      query: (id) => ({ url: `/jobCard/${id}`, method: "GET" }),
+      query: (params) => ({ url: `/jobCard/get_mob_jobcard`, method: "GET" , params}),
       providesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
 

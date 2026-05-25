@@ -10,19 +10,19 @@ const DEPARTMENT_API = createApi({
 
     // GET /departments
     getDepartments: builder.query({
-      query: () => ({ url: "/departments", method: "GET" }),
+      query: (params) => ({ url: "/departments", method: "GET",params }),
       providesTags: ["Department"],
     }),
 
     // GET /departments/:id
     getDepartment: builder.query({
-      query: (id) => ({ url: `/departments/${id}`, method: "GET" }),
+      query: (params) => ({ url: `/departments/${params?.id}`, method: "GET",params }),
       providesTags: (result, error, id) => [{ type: "Department", id }],
     }),
 
     // GET /departments/search/:searchKey
     searchDepartments: builder.query({
-      query: (searchKey) => ({ url: `/departments/search/${searchKey}`, method: "GET" }),
+      query: (params) => ({ url: `/departments/search/${searchKey?.searchKey}`, method: "GET",params }),
       providesTags: ["Department"],
     }),
 

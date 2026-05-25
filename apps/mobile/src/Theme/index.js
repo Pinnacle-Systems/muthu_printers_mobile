@@ -98,6 +98,6 @@ export const iconSize = {
 
 
 
-export const typography = { h1: { fontSize: 28, fontWeight: '700' }, h2: { fontSize: 22, fontWeight: '600' }, h3: { fontSize: 18, fontWeight: '600' }, body: { fontSize: 15, fontWeight: '400' }, sm: { fontSize: 13, fontWeight: '400' }, }; 
+export const typography = { h1: { fontSize: 28, fontWeight: '700' }, h2: { fontSize: 22, fontWeight: '600' }, h3: { fontSize: 18, fontWeight: '600' }, body: { fontSize: 15, fontWeight: '400' }, sm: { fontSize: 13, fontWeight: '400' },xs: { fontSize: 8, fontWeight: '400' } }; 
 export const radius = { sm: 6, md: 12, lg: 20, full: 9999, }; 
 export const theme = {    whitetheme,darktheme, spacing, typography, radius , iconSize , Screens};

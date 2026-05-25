@@ -1,6 +1,6 @@
 
 import DeviceInfo from 'react-native-device-info';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { createMMKV } from '../../Utils/Storage/mmkv';
 

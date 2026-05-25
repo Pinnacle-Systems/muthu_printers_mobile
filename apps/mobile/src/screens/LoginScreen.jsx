@@ -68,18 +68,33 @@ const handleLogin = async () => {
     logEvent(`Login attempt: ${username}`);
 
     const auth_api = await AuthundicateApi({ username, password })?.unwrap();
-    const { statusCode, message, token, refresh_token, userInfo } = auth_api || {};
+    const { statusCode, message, token, refresh_token, userInfo,finyearId } = auth_api || {};
 
     if (statusCode == 1) {
       Alert.alert('Login Failed', message || 'Something went wrong');
       return;
     }
 
+
+   const employee_data =  userInfo?.Employee
     // ── Persist session ──────────────────────────────────────────
     accessTokenStorage.set(token);
     refreshTokenStorage.set(refresh_token ?? token);
-    userProfileStorage.set(userInfo);
+   userProfileStorage.set({
+  branchId  : employee_data?.branchId,
+  companyId : employee_data?.Branch?.companyId,
+  userId    : employee_data?.id,
+  userName  : employee_data?.name,
+  finyearId : finyearId?.id,
+  id:       userInfo?.id       || 1001,
+  username: userInfo?.username || username,
+    });
 
+
+    //Alert?.alert("data",JSON?.stringify())
+
+
+    
     // ── Crash logger context ─────────────────────────────────────
     setUserContext({
       id:       userInfo?.id       || 1001,

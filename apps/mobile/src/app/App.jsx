@@ -2,37 +2,76 @@ import React, { useEffect } from "react";
 import { AppProviders } from "./providers/AppProviders.jsx";
 import Navigation from "./navigation/Navigation.jsx";
 import ThemeContextProvider from "../Theme/ThemeContext.jsx";
-import {Provider} from  "react-redux" 
+import { Provider } from "react-redux";
 import { StorageConfig } from "../redux/store.js";
-import { getCrashlytics, setCrashlyticsCollectionEnabled, setAttribute, log, recordError } from '@react-native-firebase/crashlytics';
+import {
+  getCrashlytics,
+  setCrashlyticsCollectionEnabled,
+  setAttributes,
+  log,
+  recordError,
+} from "@react-native-firebase/crashlytics";
+import {
+  restoreUserContext,
+  enableCrashlytics,
+} from "../Utils/crashLogger.js";
 
+// ✅ Outside component — initialized once
+const cl = getCrashlytics();
 
 export const App = () => {
 
-useEffect(()=>{
-     const cl = getCrashlytics();
-     if (__DEV__) {
-    // ✅ force enable in debug mode
-      setCrashlyticsCollectionEnabled(cl, true);
-     }
+  useEffect(() => {
 
-  const previousHandler = ErrorUtils.getGlobalHandler();
+    // ✅ Enable crashlytics
+    enableCrashlytics();
+
+    // ✅ Force enable in dev mode
+    if (__DEV__) {
+      setCrashlyticsCollectionEnabled(cl, true);
+    }
+
+    // ✅ Restore user context from MMKV
+    restoreUserContext();
+
+    // ✅ Save previous handler for chaining
+    const previousHandler = ErrorUtils.getGlobalHandler();
+
     ErrorUtils.setGlobalHandler((error, isFatal) => {
-      setAttribute(cl, "is_fatal", isFatal.toString());
-      log(cl, `[GLOBAL_ERROR] ${error?.message}`);
-      recordError(cl, error);
-      previousHandler(error, isFatal);
+      try {
+        // ✅ Use setAttributes (consistent)
+        setAttributes(cl, {
+          is_fatal: String(isFatal ?? false),
+        });
+        log(cl, `[GLOBAL_ERROR] ${error?.message ?? 'Unknown error'}`);
+        recordError(
+          cl,
+          error instanceof Error ? error : new Error(error?.message ?? 'Unknown error')
+        );
+      } catch (crashlyticsError) {
+        if (__DEV__) {
+          console.error('[CRASHLYTICS] Failed to record global error:', crashlyticsError);
+        }
+      }
+
+      // ✅ Always call previous handler
+      previousHandler?.(error, isFatal);
     });
 
-},[])
+    // ✅ Cleanup — restore previous handler on unmount
+    return () => {
+      ErrorUtils.setGlobalHandler(previousHandler);
+    };
+
+  }, []);
 
   return (
     <ThemeContextProvider>
       <Provider store={StorageConfig}>
-     <AppProviders>
-         <Navigation />
-    </AppProviders>
-    </Provider>
+        <AppProviders>
+          <Navigation />
+        </AppProviders>
+      </Provider>
     </ThemeContextProvider>
   );
 };

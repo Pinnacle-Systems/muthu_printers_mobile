@@ -4,10 +4,7 @@ import { useGetDepartmentsQuery,
   useCreateDepartmentMutation,
   useUpdateDepartmentMutation,
   useDeleteDepartmentMutation } from "../../redux/api/department";
-
-
-
-
+import { userProfileStorage } from "../../Utils/Storage/mmkv";
 
 export const useDepartmentHooks = (hook) => {
   const {
@@ -16,9 +13,16 @@ export const useDepartmentHooks = (hook) => {
     getDepartments_params,
   } = hook || {};
 
-  const getDepartments   = useGetDepartmentsQuery(getDepartments_params || {});
-  const getDepartment    = useGetDepartmentQuery(getDepartment_id,   { skip: !getDepartment_id });
-  const searchDepartments = useSearchDepartmentsQuery(searchDepartments_key, { skip: !searchDepartments_key });
+  const userdetails = userProfileStorage?.get();
+
+  const commonParams = {
+    ...(getDepartments_params ? getDepartments_params : {}),
+    ...(userdetails ? userdetails : {}),
+  };
+
+  const getDepartments    = useGetDepartmentsQuery(commonParams);
+  const getDepartment     = useGetDepartmentQuery({ ...commonParams, id: getDepartment_id }, { skip: !getDepartment_id });
+  const searchDepartments = useSearchDepartmentsQuery({ ...commonParams, key: searchDepartments_key }, { skip: !searchDepartments_key });
 
   const [createDepartment] = useCreateDepartmentMutation();
   const [updateDepartment] = useUpdateDepartmentMutation();
@@ -33,4 +37,3 @@ export const useDepartmentHooks = (hook) => {
     deleteDepartment,
   };
 };
-
