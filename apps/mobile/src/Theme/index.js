@@ -70,9 +70,10 @@ export const Screens = {
 };
 
 
-export const whitetheme = { primary: '#1c1f1f', secondary: '#FF6584', background:'#FFFFFF', surface: '#F5F5F5', text: '#1A1A2E', textMuted: '#6B7280', border: '#E5E7EB', success: '#10B981', error: '#EF4444', warning: '#F59E0B', }; 
+export const whitetheme = { primary: '#1c1f1f',btnprimary: '#30c268', secondary: '#FF6584', background:'#FFFFFF', surface: '#F5F5F5', text: '#1A1A2E', textMuted: '#6B7280', border: '#E5E7EB', success: '#10B981', error: '#EF4444', warning: '#F59E0B', }; 
 export const darktheme = {
-  primary:    '#e5e5e9',  // brightened for dark bg
+  primary:    '#e5e5e9',  // brightened for dark bg 
+  btnprimary: '#30c268',
   secondary:  '#FF7A95',  // accent only, not text
   background: '#17171a',  // base canvas
   surface:    '#1A1A2E',  // cards & panels

@@ -1,5 +1,5 @@
-import React, { useEffect, useState, memo } from "react";
-import { Alert, StyleSheet, View } from "react-native";
+import React, { useEffect, useState, memo, useContext, useCallback } from "react";
+import { Alert, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { ScanBarcode, ScanQrCode } from "lucide-react-native";
 import useThemeProvider from "../../Theme/useThemeProvider";
 import AppButton from "../../components/AppButton.jsx";
@@ -10,6 +10,10 @@ import { useDepartmentHooks } from "../../services/hooks/useDeparmentHooks.jsx";
 import { useJobCardHooks } from "../../services/hooks/useJobCardHooks.jsx";
 import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
+import { AuthContext } from "../../app/providers/AppProviders.jsx";
+import { useDispatch } from "react-redux";
+import JOBCARD_API from "../../redux/api/jobcard.js";
+
 
 
 const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
@@ -35,7 +39,7 @@ const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
   </View>
 ));
 
-const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation }) => (
+const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation ,user }) => (
   <View style={{
     height:         hp(80),
     padding:        spacing.md,
@@ -73,8 +77,14 @@ const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation }
       pageSize={table?.perPage}
       pageSizeOptions={[5, 10, 20, 50]}
       onPageChange={table?.onPageChange}   
-      onRowPress={row => navigation?.navigate("JOB",{
-                   jobCardId:    row?.jobCardId,id:row?.id })}
+      onRowPress={row =>{
+
+        if(!dropdown?.selected) return Alert?.alert("Warning","Please Select Your Department ! ")
+
+       navigation?.navigate("JOB",{
+                   jobCardDocId:    row?.jobCardId, id:row?.id , dep: dropdown?.selected, processId: row?.processId ,userId:user?.id })
+                  
+      }}
     />
 
   </View>
@@ -89,6 +99,7 @@ const convertJobCardData = (data) =>
     jobCardId:    job?.docId,
     currentState: job?.processRoute?.status,
     process:      job?.processRoute?.type,
+    processId :  job?.processRoute?.id,
     id:job?.id
   }));
 
@@ -97,7 +108,9 @@ export const HomeScreen = ({ navigation } = {}) => {
 
   const [selected,    setSelected]    = useState(null);
   const [showQrcode,  setShowQrcode]  = useState(false);
-
+  const {userDetails} = useContext(AuthContext)
+  const [refreshing, setRefreshing] = useState(false);
+const dispatch = useDispatch()
  
   const [page,    setPage]    = useState(1);
   const [perPage, setPerPage] = useState(10);
@@ -106,6 +119,7 @@ export const HomeScreen = ({ navigation } = {}) => {
   const {
     data:      deptData,
     isLoading: isLoadingDep,
+    refetch : refreshdepartment
   } = getDepartments;
 
 
@@ -118,11 +132,19 @@ export const HomeScreen = ({ navigation } = {}) => {
   const {
     data:      jobCardData,
     isLoading: isLoadingJobs,
+    refetch : refreshjobcard
   } = getJobCardList;
 
   const dep_options = convertDepartmentData(deptData?.data);
   const jobs        = convertJobCardData(jobCardData?.data) ?? [];
   const totalCount  = jobCardData?.totalCount ?? 0;  
+
+  const onRefresh=useCallback(async ()=>{
+      setRefreshing(true);
+       await dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
+       await refreshdepartment()
+       setRefreshing(false);
+  },[])
 
  
   const handlePageChange = (newPage, newPerPage) => {
@@ -143,6 +165,15 @@ export const HomeScreen = ({ navigation } = {}) => {
 
   return (
     <View style={styles.container}>
+       <ScrollView
+      contentContainerStyle={{ flex: 1 }}  // ✅ behaves like normal View
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+        />
+      }
+    >
 
       <Header
         setshowscanner={setShowQrcode}
@@ -183,6 +214,7 @@ export const HomeScreen = ({ navigation } = {}) => {
         wp={wp}
         hp={hp}
         c={c}
+        user={userDetails}
         navigation={navigation}
         dropdown={{
           selected,
@@ -201,7 +233,7 @@ export const HomeScreen = ({ navigation } = {}) => {
           onPageChange: handlePageChange,
         }}
       />
-
+</ScrollView>
     </View>
   );
 };

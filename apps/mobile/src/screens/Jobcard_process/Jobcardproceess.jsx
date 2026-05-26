@@ -1,18 +1,22 @@
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   View,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { ChevronLeft, CheckCircle, Circle, ArrowRight, AlertCircle } from 'lucide-react-native';
 import useThemeProvider from '../../Theme/useThemeProvider.jsx';
 import AppText from '../../components/Text.jsx';
 import AppSearchableDropdown from '../../components/AppSearchableDropdown.jsx';
 import AppButton from '../../components/AppButton.jsx';
-import { useGetJobCardQuery } from '../../redux/api/jobcard.js';
+import JOBCARD_API, { useGetDepmachinesQuery, useGetJobCardQuery } from '../../redux/api/jobcard.js';
+import { useUpdateProcessMutation } from '../../redux/api/process.js';
+import { logError } from '../../Utils/crashLogger.js';
+import { useDispatch } from 'react-redux';
 
 
 const ProcessRouteTimeline = ({ allProcessRoutes = [], currentRoute, c, spacing }) => {
@@ -30,7 +34,7 @@ const ProcessRouteTimeline = ({ allProcessRoutes = [], currentRoute, c, spacing 
             <AppText
               variant="sm"
               style={{
-                color     : isCompleted ? c.primary : isCurrent ? c.text : c.textMuted,
+                color     : isCompleted ? c.btnprimary : isCurrent ? c.text : c.textMuted,
                 fontWeight: isCurrent ? '700' : isCompleted ? '600' : '400',
               }}>
               {route?.Process?.name ?? `Step ${index + 1}`}
@@ -79,21 +83,28 @@ const ActionButton = ({ label, onPress, disabled, color, c, styles }) => (
 
 
 function JobCardProcess({ navigation, route }) {
-  const { jobCardId, id } = route?.params ?? {};
-
+  const { jobCardDocId, id , dep, processId ,machineId,userId , punch_data} = route?.params ?? {};
+  const dispatch = useDispatch()
+   const [punchId, setpunchId ] = useState(null)
+   const [pushenable,setpushenable] = useState(false)
+   const [lockmachine,setlockmachine]=useState(false)
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, radius, typography, iconSize, Screens } = theme;
   const { wp, hp } = Screens;
   const styles = makeStyles(c, spacing, radius);
+ 
 
-  const { data: jobcardRes, isLoading } = useGetJobCardQuery(
+  const {data:departmentmachine_data,isLoading : deparmentloading,error} = useGetDepmachinesQuery({id:dep},{skip:!dep})
+
+  const [updateprocess,{data:update_data, isLoading : updateloading}] = useUpdateProcessMutation({})
+
+  const { data: jobcardRes,refetch : refreshjobcard, isLoading } = useGetJobCardQuery(
     { id },
     { skip: !id }
   );
 
   const jobcard = jobcardRes?.data;
 
- 
   const currentRoute = jobcard?.processRoute;
 
   const allProcessRoutes = jobcard?.allProcessRoutes ?? [];
@@ -105,23 +116,88 @@ function JobCardProcess({ navigation, route }) {
 
 
   const machineOptions = useMemo(() =>
-    jobcard?.machineDetails?.map((m) => ({
-      label: m?.Machine?.name,
-      value: m?.Machine?.id,
+    departmentmachine_data?.data?.machines?.map((m) => ({
+      label: m?.name,
+      value: m?.id,
     })) ?? [],
-    [jobcard]
+    [jobcard,dep]
   );
 
   const [selectedMachine, setSelectedMachine] = React.useState(null);
 
 
-  if (isLoading) {
+  async function stopProcess() {
+  
+     try {
+    const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
+
+     if(!punch_id) return Alert?.alert("Warning","Punch Id is Missing please refresh!")
+
+    var updatep = await updateprocess({ status : "COMPLETED", jobcardId : id,  processId : processId , flag : "STOP", userId :userId , id : punch_id })?.unwrap()
+    
+  
+    if(updatep?.statusCode == 0 || updatep?.message){
+     return  Alert?.alert("Error",JSON?.stringify(updatep?.message)) 
+     }
+
+    
+     // refreshjobcard()
+    dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
+    navigation?.navigate("HOME")
+
+   } catch (error) {
+
+       Alert?.alert("Filed",JSON?.stringify(error))
+       logError("Job Card Process","stopProcess" , "Stop-Process","Punch Failed",error)
+    }
+
+    
+  }
+
+  async function startProcess(){
+
+    try {
+
+    var updatep = await updateprocess({ status : "IN_PROGRESS", jobcardId : id,  processId : processId , flag : "START", departmentId:dep, machineId:selectedMachine, userId :userId , id : 0 })?.unwrap()
+    
+  
+    if(updatep?.statusCode == 0 ||  updatep?.message) {
+     return  Alert?.alert("Error",JSON?.stringify(updatep?.message))
+     }
+    
+    // refreshjobcard()
+    dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
+    
+
+   } catch (error) {
+
+       Alert?.alert("Filed",JSON?.stringify(error))
+       logError("Job Card Process","startProcess" , "Start-Process","Punch Failed",error)
+    }finally{
+      setpushenable(true)
+    }
+  
+  }
+
+
+  useEffect(()=>{
+  if (!update_data) return; 
+  const punch_id = update_data?.data?.addMain_punch_log
+  setpunchId(punch_id?.id) 
+  if(punch_id?.id) setlockmachine(true)
+  
+},[update_data])
+
+
+  if (isLoading || deparmentloading || updateloading) {
     return (
       <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator color={c.primary} size="large" />
       </View>
     );
   }
+
+
 
   if (!jobcard) {
     return (
@@ -209,6 +285,7 @@ function JobCardProcess({ navigation, route }) {
           widthPercent={90}
           options={machineOptions}
           label="Select Machine"
+          disabled={lockmachine}
           value={selectedMachine}
           onChange={(opt) => setSelectedMachine(opt.value)}
           placeholder="Select Machine"
@@ -217,25 +294,32 @@ function JobCardProcess({ navigation, route }) {
 
     
       <View style={styles.actionRow}>
-        <ActionButton
-          label="Start"
-          color={c.primary ?? '#22C55E'}
+
+        {
+          pushenable ? <ActionButton
+          label="Push"
+          color={c.btnprimary ?? '#22C55E'}
           disabled={!canStart || !selectedMachine}
           c={c}
           styles={styles}
-          onPress={() => {
-           
-          }}
+          onPress={startProcess}
+        /> : <ActionButton
+          label="Start"
+          color={c.btnprimary ?? '#22C55E'}
+          disabled={!canStart || !selectedMachine}
+          c={c}
+          styles={styles}
+          onPress={startProcess}
         />
+        }
+       
         <ActionButton
           label="Stop"
-          color={c.primary ?? '#22C55E'}
+          color={c.btnprimary ?? '#22C55E'}
           disabled={!canStart}
           c={c}
           styles={styles}
-          onPress={() => {
-      
-          }}
+        onPress={stopProcess}
         />
       </View>
 
