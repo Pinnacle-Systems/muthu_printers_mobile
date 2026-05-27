@@ -14,9 +14,10 @@ import AppText from '../../components/Text.jsx';
 import AppSearchableDropdown from '../../components/AppSearchableDropdown.jsx';
 import AppButton from '../../components/AppButton.jsx';
 import JOBCARD_API, { useGetDepmachinesQuery, useGetJobCardQuery } from '../../redux/api/jobcard.js';
-import { useUpdateProcessMutation } from '../../redux/api/process.js';
+import { useUpdateProcessMutation, useUpdatePushProcessMutation } from '../../redux/api/process.js';
 import { logError } from '../../Utils/crashLogger.js';
 import { useDispatch } from 'react-redux';
+import { useAppModal } from '../../app/providers/AppModalProvider.jsx';
 
 
 const ProcessRouteTimeline = ({ allProcessRoutes = [], currentRoute, c, spacing }) => {
@@ -83,27 +84,35 @@ const ActionButton = ({ label, onPress, disabled, color, c, styles }) => (
 
 
 function JobCardProcess({ navigation, route }) {
-  const { jobCardDocId, id , dep, processId ,machineId,userId , punch_data} = route?.params ?? {};
+  const { jobCardDocId, id , dep, processId ,machineId_,userId , punch_data_} = route?.params ?? {};
   const dispatch = useDispatch()
    const [punchId, setpunchId ] = useState(null)
-   const [pushenable,setpushenable] = useState(false)
+   const [pauseable,setpauseable] = useState(false)
+   const [resumable , setresumable] =useState(false)
    const [lockmachine,setlockmachine]=useState(false)
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, radius, typography, iconSize, Screens } = theme;
   const { wp, hp } = Screens;
   const styles = makeStyles(c, spacing, radius);
  
-
+    const { showModal } = useAppModal();
   const {data:departmentmachine_data,isLoading : deparmentloading,error} = useGetDepmachinesQuery({id:dep},{skip:!dep})
 
   const [updateprocess,{data:update_data, isLoading : updateloading}] = useUpdateProcessMutation({})
 
-  const { data: jobcardRes,refetch : refreshjobcard, isLoading } = useGetJobCardQuery(
-    { id },
+  const [update_pause_process,{data:update_pause_data, isLoading : update_pause_loading}] = useUpdatePushProcessMutation({})
+
+  const { data: jobcardRes,refetch : refreshjobcard, isLoading ,isError : iserrorgetJobcard , error :  errorjobcard } = useGetJobCardQuery(
+    { id,userid:userId,processRouteId : processId },
     { skip: !id }
   );
 
+
+
   const jobcard = jobcardRes?.data;
+  var punch_data =  punch_data_  ??  jobcardRes?.data?.punch_data 
+  var  machineId = machineId_  ??  jobcardRes?.data?.punch_data?.Machineid
+  
 
   const currentRoute = jobcard?.processRoute;
 
@@ -126,7 +135,48 @@ function JobCardProcess({ navigation, route }) {
   const [selectedMachine, setSelectedMachine] = React.useState(null);
 
 
-  async function stopProcess() {
+
+  useEffect(() => {
+    if (iserrorgetJobcard && !isLoading) {
+      const errMsg = errorjobcard?.data?.message
+        ?? errorjobcard?.message
+        ?? 'Failed to load job card. Please try again.';
+      showModal({
+        title:        'Job Card Error',
+        message:    JSON?.stringify(errMsg),
+        type:         'error',
+        confirmLabel: 'Go Back',
+        onConfirm:    () => navigation.navigate('HOME'),
+      });
+    }
+  }, [iserrorgetJobcard, isLoading]);
+
+   async function startProcess(){
+
+    try {
+
+    var updatep = await updateprocess({ status : "IN_PROGRESS", jobcardId : id,  processId : processId , flag : "START", departmentId:dep, machineId:selectedMachine, userId :userId , id : 0 })?.unwrap()
+    
+  
+    if(updatep?.statusCode == 0 ||  updatep?.message) {
+     return  Alert?.alert("Error",JSON?.stringify(updatep?.message))
+     }
+    
+     setpauseable(true)
+    // refreshjobcard()
+    dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
+    
+
+   } catch (error) {
+
+       Alert?.alert("Failed",JSON?.stringify(error))
+       logError("Job Card Process","startProcess" , "Start-Process","Punch Failed",error)
+    }
+  
+   }
+
+
+   async function stopProcess() {
   
      try {
     const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
@@ -147,38 +197,90 @@ function JobCardProcess({ navigation, route }) {
 
    } catch (error) {
 
-       Alert?.alert("Filed",JSON?.stringify(error))
+       Alert?.alert("Failed",JSON?.stringify(error))
        logError("Job Card Process","stopProcess" , "Stop-Process","Punch Failed",error)
     }
 
     
-  }
+   }
 
-  async function startProcess(){
+    async function PauseProcess() {
+  
+     try {
+    const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
 
-    try {
+     if(!punch_id) return Alert?.alert("Warning","Punch Id is Missing please refresh!")
 
-    var updatep = await updateprocess({ status : "IN_PROGRESS", jobcardId : id,  processId : processId , flag : "START", departmentId:dep, machineId:selectedMachine, userId :userId , id : 0 })?.unwrap()
+     var updatepause = await update_pause_process({  flag : "PAUSE", userId :userId , id : punch_id ,productionlogid : punch_data?.id })?.unwrap()
     
   
-    if(updatep?.statusCode == 0 ||  updatep?.message) {
-     return  Alert?.alert("Error",JSON?.stringify(updatep?.message))
+    if(updatepause?.statusCode == 0 || updatepause?.message){
+     return  Alert?.alert("Error",JSON?.stringify(updatepause?.message)) 
      }
-    
-    // refreshjobcard()
+
+     // refreshjobcard()
+     setresumable(true)
     dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
-    
+    // navigation?.navigate("HOME")
 
    } catch (error) {
 
-       Alert?.alert("Filed",JSON?.stringify(error))
-       logError("Job Card Process","startProcess" , "Start-Process","Punch Failed",error)
-    }finally{
-      setpushenable(true)
+       Alert?.alert("Failed",JSON?.stringify(error))
+       logError("Job Card Process","PauseProcess" , "pause-Process","Punch Failed",error)
     }
+
+    
+    }
+
+
+    async function ResumeProcess() {
   
+     try {
+    const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
+
+     if(!punch_id) return Alert?.alert("Warning","Punch Id is Missing please refresh!")
+
+     var updatepause = await update_pause_process({  flag : "RESUME", userId :userId , id : punch_id ,productionlogid : punch_data?.id })?.unwrap()
+    
+  
+    if(updatepause?.statusCode == 0 || updatepause?.message){
+     return  Alert?.alert("Error",JSON?.stringify(updatepause?.message)) 
+     }
+    setresumable(false)
+    setpauseable(true)
+     // refreshjobcard()
+    dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
+    // navigation?.navigate("HOME")
+
+   } catch (error) {
+
+       Alert?.alert("Failed","Resume Process Failed to Proceed.")
+       logError("Job Card Process","PauseProcess" , "pause-Process","Punch Failed",error)
+    }
+
+    
+    }
+
+ 
+
+ 
+
+
+useEffect(()=>{
+
+  if(machineId){
+    setSelectedMachine(machineId)
+    setlockmachine(true)
+  }
+  if(punch_data?.id){
+   var resumecheck = punch_data?.pushLogs?.findLast((flast)=>!flast?.resumetime)
+   setpunchId(punch_data?.id)
+   if(resumecheck){ setresumable(true) }else{  setpauseable(true) }
+   
+
   }
 
+},[machineId,punch_data])
 
   useEffect(()=>{
   if (!update_data) return; 
@@ -186,7 +288,7 @@ function JobCardProcess({ navigation, route }) {
   setpunchId(punch_id?.id) 
   if(punch_id?.id) setlockmachine(true)
   
-},[update_data])
+  },[update_data])
 
 
   if (isLoading || deparmentloading || updateloading) {
@@ -197,6 +299,24 @@ function JobCardProcess({ navigation, route }) {
     );
   }
 
+
+// if(iserrorgetJobcard && !isLoading){
+//      showModal({
+//     title:        'Jobacrd',
+//     message:      JSON?.stringify(error),
+//     type:         'warning',
+//     confirmLabel: 'ok',
+  
+//     onConfirm:    () => { 
+//   navigation.navigate("HOME")
+//     },
+//   });
+
+//   return  <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', gap: 12 }]}>
+//         <AlertCircle size={40} color={c.textMuted} />
+//         <AppText variant="sm" muted>Job Card getting Error</AppText>
+//       </View>
+//    }
 
 
   if (!jobcard) {
@@ -296,27 +416,37 @@ function JobCardProcess({ navigation, route }) {
       <View style={styles.actionRow}>
 
         {
-          pushenable ? <ActionButton
-          label="Push"
-          color={c.btnprimary ?? '#22C55E'}
+          pauseable && !resumable ? <ActionButton
+          label="Pause"
+          color={c.secprimary ?? '#22C55E'}
           disabled={!canStart || !selectedMachine}
           c={c}
           styles={styles}
-          onPress={startProcess}
-        /> : <ActionButton
+          onPress={PauseProcess}
+        /> : 
+        
+        
+        ( !resumable ? <ActionButton
           label="Start"
           color={c.btnprimary ?? '#22C55E'}
           disabled={!canStart || !selectedMachine}
           c={c}
           styles={styles}
           onPress={startProcess}
-        />
+        />  : <ActionButton
+          label="Resume"
+          color={c.btnprimary ?? '#22C55E'}
+          disabled={!canStart || !selectedMachine}
+          c={c}
+          styles={styles}
+          onPress={ResumeProcess}
+        />   )
         }
        
         <ActionButton
           label="Stop"
           color={c.btnprimary ?? '#22C55E'}
-          disabled={!canStart}
+          disabled={!canStart || resumable}
           c={c}
           styles={styles}
         onPress={stopProcess}

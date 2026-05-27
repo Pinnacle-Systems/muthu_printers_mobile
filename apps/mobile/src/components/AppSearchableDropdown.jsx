@@ -25,6 +25,7 @@ import useThemeProvider from '../Theme/useThemeProvider';
  *  error            - error message string shown below
  *  disabled         - disables interaction
  *  emptyText        - text to show when no results found
+ *  clearable        - show X button to clear selection (default: true)
  *  widthPercent     - trigger + sheet width as % of screen  e.g. 90 → wp(90)
  *                     omit for full width (default behaviour)
  *  containerStyle   - extra style for wrapper View
@@ -40,6 +41,7 @@ const AppSearchableDropdown = ({
   error,
   disabled = false,
   emptyText = 'No results found',
+  clearable = true,
   widthPercent,
   containerStyle,
 }) => {
@@ -52,9 +54,6 @@ const AppSearchableDropdown = ({
   const { spacing, typography, radius, Screens } = theme;
   const { wp } = Screens;
 
-  // ── Resolved width ─────────────────────────────────────────────────────
-  // widthPercent=90  →  wp(90)  →  e.g. 342px
-  // widthPercent omitted  →  undefined  →  flex:1 / full width
   const resolvedWidth = widthPercent ? wp(widthPercent) : undefined;
 
   const selectedOption = options.find(o => o.value === value);
@@ -101,6 +100,10 @@ const AppSearchableDropdown = ({
     closeDropdown();
   };
 
+  const handleClear = () => {
+    onChange?.(null);
+  };
+
   const chevronRotate = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '180deg'],
@@ -138,11 +141,11 @@ const AppSearchableDropdown = ({
             paddingHorizontal: spacing.md,
             height: 50,
             opacity: disabled ? 0.5 : 1,
-            // ✅ apply wp width when provided, otherwise stretch full width
             width: resolvedWidth,
             alignSelf: resolvedWidth ? 'center' : 'auto',
           },
         ]}>
+
         {LeftIcon && (
           <LeftIcon size={17} color={iconColor} style={styles.leftIcon} />
         )}
@@ -160,6 +163,16 @@ const AppSearchableDropdown = ({
           ]}>
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
+
+        {/* ── Clear button ─────────────────────────────────────────────── */}
+        {clearable && !!selectedOption && !disabled && (
+          <TouchableOpacity
+            onPress={handleClear}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ marginRight: 6 }}>
+            <X size={15} color={iconColor} />
+          </TouchableOpacity>
+        )}
 
         <Animated.View style={{ transform: [{ rotate: chevronRotate }] }}>
           <ChevronDown size={17} color={iconColor} />
@@ -193,7 +206,6 @@ const AppSearchableDropdown = ({
           activeOpacity={1}
           onPress={closeDropdown}>
 
-          {/* Stop propagation so tapping inside doesn't close */}
           <TouchableOpacity
             activeOpacity={1}
             style={[
@@ -202,7 +214,6 @@ const AppSearchableDropdown = ({
                 backgroundColor: c.surface,
                 borderRadius: radius.md,
                 borderColor: c.border,
-                // ✅ sheet matches trigger width; falls back to margin-based full width
                 width: resolvedWidth ?? undefined,
                 alignSelf: resolvedWidth ? 'center' : 'auto',
                 marginHorizontal: resolvedWidth ? 0 : spacing.md,

@@ -10,12 +10,20 @@ const PROGRESS_API = createApi({
       query: (body) => ({ url: `/process/Update/Process`, method: "PUT", body }),
       invalidatesTags: ["Progress"],
     }),
+
+      updatePushProcess:  builder.mutation({
+      query: (body) => ({ url: `/process/Update/PushProcess`, method: "PUT", body }),
+      invalidatesTags: ["Progress"],
+    }),
+
+    
     
   }),
 });
 
 export const {
-useUpdateProcessMutation
+useUpdateProcessMutation,
+useUpdatePushProcessMutation
 } = PROGRESS_API;
 
 export default PROGRESS_API;

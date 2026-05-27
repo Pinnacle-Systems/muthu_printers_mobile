@@ -1,6 +1,6 @@
-import React, { useEffect, useState, memo, useContext, useCallback } from "react";
-import { Alert, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
-import { ScanBarcode, ScanQrCode } from "lucide-react-native";
+import React, { useEffect, useState, memo, useContext, useCallback, useMemo, useRef } from "react";
+import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { ScanQrCode } from "lucide-react-native";
 import useThemeProvider from "../../Theme/useThemeProvider";
 import AppButton from "../../components/AppButton.jsx";
 import AppText from "../../components/Text.jsx";
@@ -12,8 +12,9 @@ import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
 import { AuthContext } from "../../app/providers/AppProviders.jsx";
 import { useDispatch } from "react-redux";
-import JOBCARD_API from "../../redux/api/jobcard.js";
-
+import JOBCARD_API, { useGetTakenJobcardQuery } from "../../redux/api/jobcard.js";
+import { logError } from "../../Utils/crashLogger.js";
+import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
 
 
 const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
@@ -39,7 +40,7 @@ const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
   </View>
 ));
 
-const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation ,user }) => (
+const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table, navigation, user, onWarning }) => (
   <View style={{
     height:         hp(80),
     padding:        spacing.md,
@@ -55,35 +56,38 @@ const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation ,
       options={dropdown?.options}
       label="Select Department"
       value={dropdown?.selected}
-      onChange={option => dropdown?.setSelected(option.value)}
+      onChange={option => dropdown?.setSelected(option ? option.value : null)}
       placeholder="Select Department"
+      clearable
     />
 
     <AppTable
       widthPercent={90}
       maxHeight={hp(40)}
+      minHeight={hp(20)}
       columns={table?.columns}
       data={table?.data}
       loading={table?.isLoading}
       striped
       sortable
       showIndex
-    maxHeight={hp(40)}
-    minHeight={hp(20)} 
+      refresh={[dropdown?.selected]}
       pagination
       serverSide
       currentPage={table?.page}
       totalCount={table?.totalCount}
       pageSize={table?.perPage}
       pageSizeOptions={[5, 10, 20, 50]}
-      onPageChange={table?.onPageChange}   
-      onRowPress={row =>{
-
-        if(!dropdown?.selected) return Alert?.alert("Warning","Please Select Your Department ! ")
-
-       navigation?.navigate("JOB",{
-                   jobCardDocId:    row?.jobCardId, id:row?.id , dep: dropdown?.selected, processId: row?.processId ,userId:user?.id })
-                  
+      onPageChange={table?.onPageChange}
+      onRowPress={row => {
+        if (!dropdown?.selected) return onWarning();   // ✅ no Alert — uses modal
+        navigation?.navigate("JOB", {
+          jobCardDocId: row?.jobCardId,
+          id:           row?.id,
+          dep:          dropdown?.selected,
+          processId:    row?.processId,
+          userId:       user?.id,
+        });
       }}
     />
 
@@ -94,63 +98,143 @@ const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table ,navigation ,
 const convertDepartmentData = (data) =>
   data?.map((dep) => ({ label: dep?.name, value: dep?.id }));
 
-const convertJobCardData = (data) =>
-  data?.map((job) => ({
-    jobCardId:    job?.docId,
-    currentState: job?.processRoute?.status,
-    process:      job?.processRoute?.type,
-    processId :  job?.processRoute?.id,
-    id:job?.id
-  }));
+const convertJobCardData = (data, department) =>
+  data
+    ?.filter(fdata => {
+      if (!department) return true;
+      const dept = fdata?.processRoute?.Process;
+      return dept?.departmentId == department;
+    })
+    ?.map((job) => ({
+      jobCardId:    job?.docId,
+      currentState: job?.processRoute?.status,
+      process:      job?.processRoute?.Process?.name,
+      processId:    job?.processRoute?.id,
+      id:           job?.id,
+    }));
 
 
 export const HomeScreen = ({ navigation } = {}) => {
 
-  const [selected,    setSelected]    = useState(null);
-  const [showQrcode,  setShowQrcode]  = useState(false);
-  const {userDetails} = useContext(AuthContext)
-  const [refreshing, setRefreshing] = useState(false);
-const dispatch = useDispatch()
- 
-  const [page,    setPage]    = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const { showModal, showWarning } = useAppModal();
+  const { userDetails }            = useContext(AuthContext);
+  const dispatch                   = useDispatch();
 
+  const [selected,   setSelected]   = useState(null);
+  const [showQrcode, setShowQrcode] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [page,       setPage]       = useState(1);
+  const [perPage,    setPerPage]    = useState(10);
+
+  // ✅ prevents re-navigation after refresh
+  const hasNavigated = useRef(false);
+
+  // ── Queries ────────────────────────────────────────────────────────
   const { getDepartments } = useDepartmentHooks();
   const {
     data:      deptData,
     isLoading: isLoadingDep,
-    refetch : refreshdepartment
+    refetch:   refreshdepartment,
   } = getDepartments;
 
-
-  
-  const { getJobCardList } = useJobCardHooks({getJobCardList_params : {
-     pagination:true,
-     pageNumber:page,
-     dataPerPage:perPage}});
+  const { getJobCardList } = useJobCardHooks({
+    getJobCardList_params: {
+      pagination:  true,
+      pageNumber:  page,
+      dataPerPage: perPage,
+    },
+  });
 
   const {
     data:      jobCardData,
     isLoading: isLoadingJobs,
-    refetch : refreshjobcard
+    refetch:   refreshjobcard,
   } = getJobCardList;
 
+  const {
+    data:    takendjobdata,
+    isLoading: loadingTakendata,
+    isError: isErrortaken,
+    error:   takencarderror,
+  } = useGetTakenJobcardQuery({ userid: userDetails?.id ?? null });
+
+  // ── Derived ────────────────────────────────────────────────────────
   const dep_options = convertDepartmentData(deptData?.data);
-  const jobs        = convertJobCardData(jobCardData?.data) ?? [];
-  const totalCount  = jobCardData?.totalCount ?? 0;  
 
-  const onRefresh=useCallback(async ()=>{
-      setRefreshing(true);
-       await dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
-       await refreshdepartment()
-       setRefreshing(false);
-  },[])
+  // ✅ fixed — both jobCardData and selected in deps
+  const jobs = useMemo(
+    () => convertJobCardData(jobCardData?.data, selected) ?? [],
+    [jobCardData, selected],
+  );
 
- 
+  const totalCount = jobCardData?.totalCount ?? 0;
+
+  // ── Refresh ────────────────────────────────────────────────────────
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    hasNavigated.current = false;   // ✅ reset guard so taken job re-checked
+
+    try {
+      await dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
+      await refreshdepartment();
+      await refreshjobcard();       // ✅ was missing
+    } catch (err) {
+      logError("HOME SCREEN", "REFRESH", "PULL_REFRESH", "Refresh Failed", err);
+    } finally {
+      setRefreshing(false);         // ✅ always stop spinner even on error
+    }
+  }, []);
+
+  // ── Taken job navigation ───────────────────────────────────────────
+  useEffect(() => {
+    if (!takendjobdata?.data)  return;
+    if (hasNavigated.current)  return;  // ✅ skip if already navigated
+
+    hasNavigated.current = true;
+
+    const row = takendjobdata?.data;
+    navigation?.navigate("JOB", {
+      id:          row?.jobCardId,
+      dep:         row?.departmentid,
+      processId:   row?.processRouteId,
+      userId:      row?.Userid,
+      machineId:   row?.Machineid,
+      punch_data_: takendjobdata?.data,
+    });
+  }, [takendjobdata]);
+
+  // ── Taken job error ────────────────────────────────────────────────
+  useEffect(() => {
+    if (!isErrortaken) return;
+
+    logError(
+      "HOME SCREEN", "API_CALL", "API",
+      "TAKEN JOB CARD FETCH FAILED",
+      typeof takencarderror === "object" ? takencarderror : { takencarderror },
+    );
+
+    showModal({
+      title:        'Previous Process',
+      message:      "Previous process couldn't be fetched. Please select manually or retry.",
+      type:         'warning',
+      confirmLabel: 'Retry',
+      cancelLabel:  'Cancel',
+      onConfirm:    () => dispatch(JOBCARD_API.util.invalidateTags(["JobCard"])),
+    });
+  }, [isErrortaken]);
+
+  // ── Handlers ───────────────────────────────────────────────────────
   const handlePageChange = (newPage, newPerPage) => {
     setPage(newPage);
     setPerPage(newPerPage);
   };
+
+  const handleDeptWarning = useCallback(() => {
+    showWarning(
+      'Department Required',
+      'Please select your department before proceeding.',
+    );
+  }, []);
 
   const columns = [
     { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
@@ -163,77 +247,79 @@ const dispatch = useDispatch()
   const { wp, hp } = Screens;
   const styles = makeStyles(c, spacing, radius, typography);
 
+  // ── Render ─────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
-       <ScrollView
-      contentContainerStyle={{ flex: 1 }}  // ✅ behaves like normal View
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-        />
-      }
-    >
-
-      <Header
-        setshowscanner={setShowQrcode}
-        iconSize={iconSize}
-        spacing={spacing}
-        wp={wp}
-        hp={hp}
-        c={c}
-      />
-
-      {/* ✅ QR Scanner Modal */}
-      <AppModal
-        visible={showQrcode}
-        onClose={() => setShowQrcode(false)}
-        type="fullscreen"
-        showHeader={false}
+      <ScrollView
+        contentContainerStyle={{ flex: 1 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+          />
+        }
       >
-        <QRScanner
-          onScan={(data) => {
-            console.log('Scanned:', data);
-            setShowQrcode(false);
-          }}
-          onError={(err) => console.error(err)}
-          onClose={() => setShowQrcode(false)}
-          hint="Scan JobCard QR code"
-          borderColor="#00FF00"
-          scanInterval={2000}
+
+        <Header
+          setshowscanner={setShowQrcode}
+          iconSize={iconSize}
+          spacing={spacing}
+          wp={wp}
+          hp={hp}
+          c={c}
         />
-      </AppModal>
 
-      <AppText variant="sm" muted align="center" style={{ marginTop: 20 }}>
-        OR
-      </AppText>
+        {/* ── QR Scanner Modal ── */}
+        <AppModal
+          visible={showQrcode}
+          onClose={() => setShowQrcode(false)}
+          type="fullscreen"
+          showHeader={false}
+        >
+          <QRScanner
+            onScan={(data) => {
+              console.log('Scanned:', data);
+              setShowQrcode(false);
+            }}
+            onError={(err) => console.error(err)}
+            onClose={() => setShowQrcode(false)}
+            hint="Scan JobCard QR code"
+            borderColor="#00FF00"
+            scanInterval={2000}
+          />
+        </AppModal>
 
-      <Body
-        iconSize={iconSize}
-        spacing={spacing}
-        wp={wp}
-        hp={hp}
-        c={c}
-        user={userDetails}
-        navigation={navigation}
-        dropdown={{
-          selected,
-          setSelected,
-          options:   dep_options,
-          isLoading: isLoadingDep,
-        }}
-        table={{
-          columns,
-          data:         jobs,
-          isLoading:    isLoadingJobs,
-          // ✅ pagination
-          page,
-          perPage,
-          totalCount,
-          onPageChange: handlePageChange,
-        }}
-      />
-</ScrollView>
+        <AppText variant="sm" muted align="center" style={{ marginTop: 20 }}>
+          OR
+        </AppText>
+
+        <Body
+          iconSize={iconSize}
+          spacing={spacing}
+          wp={wp}
+          hp={hp}
+          c={c}
+          user={userDetails}
+          navigation={navigation}
+          onWarning={handleDeptWarning}
+          dropdown={{
+            selected,
+            setSelected,
+            options:   dep_options,
+            isLoading: isLoadingDep,
+          }}
+          table={{
+            columns,
+            data:        jobs,
+            isLoading:   isLoadingJobs,
+            page,
+            perPage,
+            totalCount,
+            onPageChange: handlePageChange,
+          }}
+        />
+
+      </ScrollView>
     </View>
   );
 };

@@ -20,6 +20,11 @@ const JOBCARD_API = createApi({
       providesTags: ["JobCard"],
     }),
 
+     getTakenJobcard: builder.query({
+      query: (params) => ({ url: "/jobCard/getEmployeeTakenJobcard", method: "GET",params }),
+      providesTags: ["JobCard"],
+    }),
+
     // GET /jobcards/:id
     getJobCard: builder.query({
       query: (params) => ({ url: `/jobCard/get_mob_jobcard`, method: "GET" , params}),
@@ -59,7 +64,8 @@ export const {
   useCreateJobCardMutation,
   useUpdateJobCardMutation,
   useDeleteJobCardMutation,
-  useGetDepmachinesQuery
+  useGetDepmachinesQuery,
+  useGetTakenJobcardQuery
 } = JOBCARD_API;
 
 export default JOBCARD_API;

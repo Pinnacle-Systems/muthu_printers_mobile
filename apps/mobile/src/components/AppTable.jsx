@@ -83,6 +83,7 @@ const AppTable = ({
   currentPage,
   onPageChange,
   serverSide       = false,
+  refresh=[]
 }) => {
 
   const [sortConfig, setSortConfig]           = useState({ key: null, direction: 'asc' });
@@ -136,7 +137,7 @@ const AppTable = ({
           : aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
       return sortConfig.direction === 'asc' ? cmp : -cmp;
     });
-  }, [data, sortConfig]);
+  }, [data, sortConfig , ...refresh]);
 
   // ─── Pagination logic ─────────────────
   const activePage     = serverSide ? (currentPage ?? 1) : internalPage;
@@ -507,7 +508,7 @@ const AppTable = ({
                 { width: rowWidth, padding: spacing.xl ?? spacing.lg },
               ]}>
                 <Text style={{
-                  fontSize:  typography.xs?.fontSize ?? 13,
+                  fontSize:  typography.md?.fontSize ?? 13,
                   color:     c.textMuted,
                   textAlign: 'center',
                 }}>

@@ -74,6 +74,7 @@ export const whitetheme = { primary: '#1c1f1f',btnprimary: '#30c268', secondary:
 export const darktheme = {
   primary:    '#e5e5e9',  // brightened for dark bg 
   btnprimary: '#30c268',
+  secprimary: '#3032c2',
   secondary:  '#FF7A95',  // accent only, not text
   background: '#17171a',  // base canvas
   surface:    '#1A1A2E',  // cards & panels

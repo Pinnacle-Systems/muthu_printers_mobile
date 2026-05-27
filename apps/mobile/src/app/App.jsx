@@ -15,6 +15,7 @@ import {
   restoreUserContext,
   enableCrashlytics,
 } from "../Utils/crashLogger.js";
+import { AppModalProvider } from "./providers/AppModalProvider.jsx";
 
 // ✅ Outside component — initialized once
 const cl = getCrashlytics();
@@ -69,7 +70,9 @@ export const App = () => {
     <ThemeContextProvider>
       <Provider store={StorageConfig}>
         <AppProviders>
+           <AppModalProvider>
           <Navigation />
+          </AppModalProvider>
         </AppProviders>
       </Provider>
     </ThemeContextProvider>

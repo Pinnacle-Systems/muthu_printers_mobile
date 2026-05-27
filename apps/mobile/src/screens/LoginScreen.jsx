@@ -106,7 +106,7 @@ const handleLogin = async () => {
     navigation.navigate('Home');
 
   } catch (error) {
-    logError(error, 'AUTH_ERROR', {
+    logError("LOGIN","Handle Login","AUTH",error, 'AUTH_ERROR', {
       screen:   'LoginScreen',
       username,
     });
