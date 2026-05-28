@@ -44,6 +44,7 @@ const AppSearchableDropdown = ({
   clearable = true,
   widthPercent,
   containerStyle,
+  triggerStyle,
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -144,6 +145,7 @@ const AppSearchableDropdown = ({
             width: resolvedWidth,
             alignSelf: resolvedWidth ? 'center' : 'auto',
           },
+          triggerStyle,
         ]}>
 
         {LeftIcon && (

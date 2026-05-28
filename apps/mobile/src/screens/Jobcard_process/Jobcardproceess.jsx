@@ -174,7 +174,7 @@ function JobCardProcess({ navigation, route }) {
     await refreshjobcard();
     dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
   } catch (err) {
-    logError("Job Card Process", "onRefresh", "REFRESH", "Refresh Failed", err);
+    logError("Job Card Process", "onRefresh", "REFRESH", err, { message: "Refresh Failed" });
   } finally {
     setRefreshing(false);
   }
@@ -199,7 +199,7 @@ function JobCardProcess({ navigation, route }) {
    } catch (error) {
 
        Alert?.alert("Failed",JSON?.stringify(error))
-       logError("Job Card Process","startProcess" , "Start-Process","Punch Failed",error)
+       logError("Job Card Process","startProcess" , "Start-Process", error, { message: "Punch Failed" })
     }
   
    }
@@ -230,7 +230,7 @@ function JobCardProcess({ navigation, route }) {
    } catch (error) {
 
        Alert?.alert("Failed",JSON?.stringify(error))
-       logError("Job Card Process","stopProcess" , "Stop-Process","Punch Failed",error)
+       logError("Job Card Process","stopProcess" , "Stop-Process", error, { message: "Punch Failed" })
     }
 
     
@@ -258,7 +258,7 @@ function JobCardProcess({ navigation, route }) {
    } catch (error) {
 
        Alert?.alert("Failed",JSON?.stringify(error))
-       logError("Job Card Process","PauseProcess" , "pause-Process","Punch Failed",error)
+       logError("Job Card Process","PauseProcess" , "pause-Process", error, { message: "Punch Failed" })
     }
 
     
@@ -287,7 +287,7 @@ function JobCardProcess({ navigation, route }) {
    } catch (error) {
 
        Alert?.alert("Failed","Resume Process Failed to Proceed.")
-       logError("Job Card Process","PauseProcess" , "pause-Process","Punch Failed",error)
+       logError("Job Card Process","PauseProcess" , "pause-Process", error, { message: "Punch Failed" })
     }
 
     
@@ -465,11 +465,12 @@ useEffect(()=>{
                    fontSize: typography.sm.fontSize,
                    color: c.textMuted,
                    marginBottom: spacing.xs,
-                   marginLeft: spacing.xs,
+                   marginLeft: spacing.sm,
                  },
                ]}>Completed Qty</AppText>
             <AppInput
              placeholder="Enter Completed Qty"
+              widthPercent={90}
                   value={completedqty}
                   onChangeText={text => {
 

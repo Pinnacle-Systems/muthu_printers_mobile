@@ -209,7 +209,7 @@ const handleLogin = async () => {
             style={[styles.forgotWrap, { marginBottom: spacing.lg }]}
             onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={{ fontSize: typography.sm.fontSize, color: c.textMuted }}>
-              Forgot password?
+          
             </Text>
           </TouchableOpacity>
 
@@ -239,7 +239,7 @@ const handleLogin = async () => {
         {/* ── CHILD 2 — Bottom content ───────────────────────────────────── */}
         <View style={styles.signupRow}>
           <Text style={{ fontSize: typography.sm.fontSize, color: c.textMuted }}>
-            Don't have an account?{'  '}
+            {/* Don't have an account?{'  '} */}
           </Text>
           <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
             <Text style={{
@@ -247,7 +247,7 @@ const handleLogin = async () => {
               color: c.primary,
               fontWeight: '600',
             }}>
-              Sign up
+              @ 2026 Pinnacle Systems. All rights reserved
             </Text>
           </TouchableOpacity>
         </View>
@@ -261,7 +261,7 @@ const handleLogin = async () => {
 const styles = StyleSheet.create({
   safeArea:      { flex: 1 },
   scrollContent: { flexGrow: 1, justifyContent: 'space-between' },
-  headerWrapper: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 32 },
+  headerWrapper: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 , marginTop: 20},
   logoArea:      { marginTop: 16 },
   brandMark:     { alignItems: 'center', justifyContent: 'center' },
   brandText:     { fontWeight: '700' },

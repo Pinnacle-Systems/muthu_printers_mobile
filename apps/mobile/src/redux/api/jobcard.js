@@ -49,7 +49,7 @@ const JOBCARD_API = createApi({
 
     // PUT /jobcards/:id
     updateJobCard: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/jobCard/${id}`, method: "PUT", body }),
+      query: ({ id, ...body }) => ({ url: `/jobCard/updateJobCardState/${id}`, method: "PUT", body }),
       invalidatesTags: (result, error, { id }) => [{ type: "JobCard", id }],
     }),
 

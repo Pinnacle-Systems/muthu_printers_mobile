@@ -1,5 +1,5 @@
 import React, { useEffect, useState, memo, useContext, useCallback, useMemo, useRef } from "react";
-import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
 import { ScanQrCode } from "lucide-react-native";
 import useThemeProvider from "../../Theme/useThemeProvider";
 import AppButton from "../../components/AppButton.jsx";
@@ -12,9 +12,12 @@ import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
 import { AuthContext } from "../../app/providers/AppProviders.jsx";
 import { useDispatch } from "react-redux";
+import { Edit, X } from "lucide-react-native";
 import JOBCARD_API, { useGetTakenJobcardQuery } from "../../redux/api/jobcard.js";
+import { useUpdateCurrentProcessMutation } from "../../redux/api/process.js";
 import { logError } from "../../Utils/crashLogger.js";
 import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
 
 const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp,selected, c }) => (
@@ -25,15 +28,16 @@ const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp,selected, c }) 
     gap:            20,
     alignItems:     "center",
     justifyContent: "center",
+    marginTop:      spacing.md,
   }}>
-    <ScanQrCode
+    <MaterialIcons
+      name="qr-code-scanner"
       size={iconSize.mxl}
-      strokeWidth={1.5}
       color={c.text}
       style={{ marginTop: 10 }}
     />
     <AppButton
-      style={{ width: wp(80) }}
+      style={{ width: wp(90) }}
       onPress={() =>{
        if(!selected) return Alert?.alert("Permission","Permission Denied Please Select Department!");
       setshowscanner(true)
@@ -45,7 +49,7 @@ const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp,selected, c }) 
 
 
 const TABS = [
-  { key: "pending",   label: "Pending"   },
+  { key: "pending",   label: "Available"   },
   { key: "completed", label: "Completed" },
 ];
 
@@ -54,9 +58,10 @@ const Body = memo(({
   dropdown, table, completedtable,
   navigation, user, onWarning,
   activeTab, setActiveTab,        
+  localStatusUpdates, onSaveChanges, isSaving
 }) => (
   <View style={{
-    height:        hp(80),
+    minHeight:     hp(80),
     padding:       spacing.md,
     flexDirection: "column",
     gap:           20,
@@ -65,7 +70,7 @@ const Body = memo(({
   }}>
 
     <AppSearchableDropdown
-      widthPercent={80}
+      widthPercent={90}
       disabled={dropdown?.isLoading}
       options={dropdown?.options}
       label="Select Department"
@@ -113,6 +118,7 @@ const Body = memo(({
 
     {/* ── Conditional Table ── */}
     {activeTab === "pending" ? (
+      <>
       <AppTable
         key="pending"
         widthPercent={90}
@@ -141,6 +147,15 @@ const Body = memo(({
           });
         }}
       />
+      {Object.keys(localStatusUpdates || {}).length > 0 && (
+         <AppButton 
+           label={isSaving ? "Saving..." : "Save Changes"} 
+           onPress={onSaveChanges}
+           disabled={isSaving}
+           style={{ width: wp(90), marginTop: 10 }}
+         />
+      )}
+      </>
     ) : (
       <AppTable
         key="completed"
@@ -218,6 +233,10 @@ export const HomeScreen = ({ navigation,route } = {}) => {
   const [refreshing, setRefreshing] = useState(false);
   const [page,       setPage]       = useState(1);
   const [perPage,    setPerPage]    = useState(10);
+  
+  const [localStatusUpdates, setLocalStatusUpdates] = useState({});
+  const [editingRow, setEditingRow] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // ✅ prevents re-navigation after refresh
   const hasNavigated = useRef(false);
@@ -243,6 +262,8 @@ export const HomeScreen = ({ navigation,route } = {}) => {
     isLoading: isLoadingJobs,
     refetch:   refreshjobcard,
   } = getJobCardList;
+  
+  const [updateCurrentProcess] = useUpdateCurrentProcessMutation();
 
   const {  data:      compl_jobCardData,
     isLoading: isLoadingcompl_Jobs,
@@ -260,8 +281,14 @@ export const HomeScreen = ({ navigation,route } = {}) => {
 
   // ✅ fixed — both jobCardData and selected in deps
   const jobs = useMemo(
-    () => convertJobCardData(jobCardData?.data, selected) ?? [],
-    [jobCardData, selected],
+    () => {
+      const baseJobs = convertJobCardData(jobCardData?.data, selected) ?? [];
+      return baseJobs.map(job => ({
+        ...job,
+        currentState: localStatusUpdates[job.id] || job.currentState
+      }));
+    },
+    [jobCardData, selected, localStatusUpdates],
   );
 
   const completed_jobs = useMemo(
@@ -284,7 +311,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
       await refreshjobcard();       // ✅ was missing
       await refreshcompl_jobcard();
     } catch (err) {
-      logError("HOME SCREEN", "REFRESH", "PULL_REFRESH", "Refresh Failed", err);
+      logError("HOME SCREEN", "REFRESH", "PULL_REFRESH", err, { message: "Refresh Failed" });
     } finally {
       setRefreshing(false);         // ✅ always stop spinner even on error
     }
@@ -315,8 +342,8 @@ export const HomeScreen = ({ navigation,route } = {}) => {
 
     logError(
       "HOME SCREEN", "API_CALL", "API",
-      "TAKEN JOB CARD FETCH FAILED",
-      typeof takencarderror === "object" ? takencarderror : { takencarderror },
+      takencarderror,
+      { message: "TAKEN JOB CARD FETCH FAILED" }
     );
 
     showModal({
@@ -342,10 +369,92 @@ export const HomeScreen = ({ navigation,route } = {}) => {
     );
   }, []);
 
-  const columns = [
+  const handleSaveChanges = async () => {
+    setIsSaving(true);
+    try {
+      const updates = Object.entries(localStatusUpdates).map(([id, status]) => {
+        const job = jobs.find(j => j.id == id);
+        return {
+          processId: job?.processId,
+          status,
+        };
+      });
+      
+      for (const update of updates) {
+        if (update.processId) {
+          await updateCurrentProcess(update).unwrap();
+        }
+      }
+      
+      setLocalStatusUpdates({});
+      Alert.alert("Success", "All changes saved successfully!");
+      onRefresh(); 
+    } catch (err) {
+      logError("HOME SCREEN", "UPDATE", "BATCH_UPDATE", err, { message: "Failed to save changes" });
+      Alert.alert("Error", "Failed to save some changes.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const pendingColumns = [
     { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
-    { key: 'currentState', title: 'Current State', flex: 1 },
-    { key: 'process',      title: 'Process',       flex: 1, align: 'center' },
+    { 
+      key: 'currentState', 
+      title: 'Current State', 
+      flex: 1.3,
+      render: (val, row) => {
+        if (editingRow?.id === row.id) {
+          return (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1, minWidth: 120 }}>
+              <View style={{ flex: 1 }}>
+                <AppSearchableDropdown
+                  containerStyle={{ marginBottom: 0 }}
+                  triggerStyle={{ height: 36, paddingHorizontal: 8 }}
+                  clearable={false}
+                  options={[
+                    { label: "In Process", value: "IN_PROGRESS" },
+                    { label: "Completed", value: "COMPLETED" }
+                  ]}
+                  value={localStatusUpdates[row.id] || row.currentState}
+                  onChange={option => {
+                    if (option) {
+                      setLocalStatusUpdates(prev => ({
+                        ...prev,
+                        [row.id]: option.value
+                      }));
+                    }
+                    setEditingRow(null);
+                  }}
+                  placeholder="Status"
+                />
+              </View>
+              <TouchableOpacity onPress={(e) => { e.stopPropagation(); setEditingRow(null); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                <X size={18} color={c.error || 'red'} />
+              </TouchableOpacity>
+            </View>
+          );
+        }
+
+        return (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text }}>{val}</AppText>
+            {userDetails?.username?.toLowerCase() === 'admin' && (
+              <TouchableOpacity onPress={(e) => { e.stopPropagation(); setEditingRow(row); }}>
+                <Edit size={16} color={c.primary} />
+              </TouchableOpacity>
+            )}
+          </View>
+        );
+      }
+    },
+    { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
+  ];
+
+  const completedColumns = [
+    { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
+    { key: 'currentState', title: 'Current State', flex: 1.3 },
+    { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
   ];
 
   const { current_theme: c, theme } = useThemeProvider();
@@ -428,7 +537,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
             isLoading: isLoadingDep,
           }}
           table={{
-            columns,
+            columns: pendingColumns,
             data:        jobs,
             isLoading:   isLoadingJobs,
             page,
@@ -439,7 +548,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
 
           completedtable = {{
 
-             columns,
+             columns: completedColumns,
              data:        completed_jobs,
              isLoading:  isLoadingcompl_Jobs,
              page,
@@ -448,6 +557,9 @@ export const HomeScreen = ({ navigation,route } = {}) => {
              onPageChange: handlePageChange,
            
           }}
+          localStatusUpdates={localStatusUpdates}
+          onSaveChanges={handleSaveChanges}
+          isSaving={isSaving}
         />
 
       </ScrollView>
