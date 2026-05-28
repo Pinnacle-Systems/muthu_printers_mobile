@@ -1,5 +1,6 @@
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState,useCallback } from 'react';
+
 import {
   View,
   ScrollView,
@@ -7,6 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+   RefreshControl,
 } from 'react-native';
 import { ChevronLeft, CheckCircle, Circle, ArrowRight, AlertCircle } from 'lucide-react-native';
 import useThemeProvider from '../../Theme/useThemeProvider.jsx';
@@ -18,6 +20,7 @@ import { useUpdateProcessMutation, useUpdatePushProcessMutation } from '../../re
 import { logError } from '../../Utils/crashLogger.js';
 import { useDispatch } from 'react-redux';
 import { useAppModal } from '../../app/providers/AppModalProvider.jsx';
+import AppInput from '../../components/AppInput.jsx';
 
 
 const ProcessRouteTimeline = ({ allProcessRoutes = [], currentRoute, c, spacing }) => {
@@ -90,10 +93,13 @@ function JobCardProcess({ navigation, route }) {
    const [pauseable,setpauseable] = useState(false)
    const [resumable , setresumable] =useState(false)
    const [lockmachine,setlockmachine]=useState(false)
+   const [completedqty,setcompletedqty]=useState(0)
+   const [qtyerror,setqtyerror]=useState("")
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, radius, typography, iconSize, Screens } = theme;
   const { wp, hp } = Screens;
   const styles = makeStyles(c, spacing, radius);
+  const [refreshing, setRefreshing] = useState(false);
  
     const { showModal } = useAppModal();
   const {data:departmentmachine_data,isLoading : deparmentloading,error} = useGetDepmachinesQuery({id:dep},{skip:!dep})
@@ -114,10 +120,21 @@ function JobCardProcess({ navigation, route }) {
   var  machineId = machineId_  ??  jobcardRes?.data?.punch_data?.Machineid
   
 
+
+
   const currentRoute = jobcard?.processRoute;
 
   const allProcessRoutes = jobcard?.allProcessRoutes ?? [];
 
+ const sq = currentRoute?.sequence 
+  ? Number(currentRoute.sequence) - 1 
+  : null;
+ const processqty = useMemo(() => 
+  currentRoute?.sequence == 1 
+    ? jobcard?.runningQty 
+    : allProcessRoutes?.find((sf) => sf.sequence == sq)?.completedQty,
+  [jobcard, currentRoute, allProcessRoutes, sq]  // ✅ correct deps
+)
 
   const allocationDtls  = currentRoute?.productionAllocationDtls ?? [];
   const firstAllocation = allocationDtls?.[0];
@@ -151,6 +168,18 @@ function JobCardProcess({ navigation, route }) {
     }
   }, [iserrorgetJobcard, isLoading]);
 
+  const onRefresh = useCallback(async () => {
+  setRefreshing(true);
+  try {
+    await refreshjobcard();
+    dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
+  } catch (err) {
+    logError("Job Card Process", "onRefresh", "REFRESH", "Refresh Failed", err);
+  } finally {
+    setRefreshing(false);
+  }
+}, [refreshjobcard]);
+
    async function startProcess(){
 
     try {
@@ -179,21 +208,24 @@ function JobCardProcess({ navigation, route }) {
    async function stopProcess() {
   
      try {
+      if(processqty < completedqty) return Alert?.alert("Qty","You have entered Above Process Qty.!")
+        if(!completedqty) return Alert?.alert("Missing","Please enter completed qty.!")
+
     const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
 
      if(!punch_id) return Alert?.alert("Warning","Punch Id is Missing please refresh!")
 
-    var updatep = await updateprocess({ status : "COMPLETED", jobcardId : id,  processId : processId , flag : "STOP", userId :userId , id : punch_id })?.unwrap()
+    var updatep = await updateprocess({ status : "COMPLETED", jobcardId : id,  processId : processId , flag : "STOP", userId :userId , id : punch_id , completedQty : completedqty})?.unwrap()
     
   
     if(updatep?.statusCode == 0 || updatep?.message){
      return  Alert?.alert("Error",JSON?.stringify(updatep?.message)) 
      }
 
-    
+    setcompletedqty(null)
      // refreshjobcard()
     dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]))
-    navigation?.navigate("HOME")
+    navigation?.navigate("HOME",{completed:true})
 
    } catch (error) {
 
@@ -274,8 +306,9 @@ useEffect(()=>{
   }
   if(punch_data?.id){
    var resumecheck = punch_data?.pushLogs?.findLast((flast)=>!flast?.resumetime)
+   var pauseheck = punch_data?.pushLogs?.findLast((flast)=>flast?.pushtime)
    setpunchId(punch_data?.id)
-   if(resumecheck){ setresumable(true) }else{  setpauseable(true) }
+   if(resumecheck){ setresumable(true) }else if(pauseheck){  setpauseable(true) }
    
 
   }
@@ -347,6 +380,12 @@ useEffect(()=>{
     <ScrollView
       style={styles.container}
       contentContainerStyle={{ paddingBottom: 40 }}
+      refreshControl={                          // ← add this
+       <RefreshControl
+       refreshing={refreshing}
+        onRefresh={onRefresh}
+      />
+       }
       showsVerticalScrollIndicator={false}>
 
      
@@ -394,6 +433,12 @@ useEffect(()=>{
           </AppText>
         </InfoRow>
 
+         <InfoRow label="Production Qty" c={c} spacing={spacing} styles={styles}>
+          <AppText style={{ color: c.textMuted }}>
+            {processqty ?? '0'}
+          </AppText>
+        </InfoRow>
+
       </View>
 
       
@@ -411,6 +456,35 @@ useEffect(()=>{
           placeholder="Select Machine"
         />
       </View>
+
+ 
+      <AppText
+               style={[
+        
+                 {
+                   fontSize: typography.sm.fontSize,
+                   color: c.textMuted,
+                   marginBottom: spacing.xs,
+                   marginLeft: spacing.xs,
+                 },
+               ]}>Completed Qty</AppText>
+            <AppInput
+             placeholder="Enter Completed Qty"
+                  value={completedqty}
+                  onChangeText={text => {
+
+                      const num = Number(text);
+                      if (!isNaN(num) && num > processqty) return; // block values above 100
+                      setcompletedqty(text)
+                    
+                   }}
+                  keyboardType="number"
+                  autoCapitalize="none"
+                
+                  autoCorrect={false}
+                  error={qtyerror}
+                />
+
 
     
       <View style={styles.actionRow}>
@@ -446,7 +520,7 @@ useEffect(()=>{
         <ActionButton
           label="Stop"
           color={c.btnprimary ?? '#22C55E'}
-          disabled={!canStart || resumable}
+          disabled={!canStart || resumable || !selectedMachine }
           c={c}
           styles={styles}
         onPress={stopProcess}
@@ -484,7 +558,7 @@ const makeStyles = (c, spacing, radius) =>
     infoRow: {
       flexDirection:   'row',
       alignItems:      'center',
-      paddingVertical: spacing.md,
+      paddingVertical: spacing.sm,
       paddingHorizontal: spacing.md,
     },
     divider: {

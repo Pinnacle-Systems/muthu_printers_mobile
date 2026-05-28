@@ -5,6 +5,7 @@ import {
   useCreateJobCardMutation,
   useUpdateJobCardMutation,
   useDeleteJobCardMutation,
+  useGetCompletedJobCardQuery,
 } from "../../redux/api/jobcard";
 import { userProfileStorage } from "../../Utils/Storage/mmkv";
 
@@ -30,6 +31,10 @@ export const useJobCardHooks = (hook) => {
     { skip: !getJobCard_id }
   );
 
+  const getJobCardCompletedList =  useGetCompletedJobCardQuery(
+    { ...commonParams }
+  );
+
   // ✅ Auto — only runs when params passed
   const getJobCardList = useGetJobCardListQuery(
     commonParams,
@@ -50,6 +55,7 @@ export const useJobCardHooks = (hook) => {
     getJobCards,
     getJobCardList,
     getJobCard,
+    getJobCardCompletedList,
     createJobCard,
     updateJobCard,
     deleteJobCard,

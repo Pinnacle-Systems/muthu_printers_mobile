@@ -78,7 +78,7 @@ const AppTable = ({
   // ─── Pagination ───────────────────────
   pagination       = false,
   pageSize         = 10,
-  pageSizeOptions  = [5, 10, 20, 50],
+  pageSizeOptions  = [],
   totalCount,
   currentPage,
   onPageChange,
@@ -357,7 +357,7 @@ const AppTable = ({
           </Text>
 
           {/* Page size buttons */}
-          <View style={styles.pageSizeRow}>
+         {pageSizeOptions?.length > 0 ?  <View style={styles.pageSizeRow}>
             <Text style={[
               styles.paginationInfoText,
               { color: c.textMuted, fontSize: typography.sm?.fontSize ?? 12 },
@@ -389,7 +389,7 @@ const AppTable = ({
                 </Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </View>  : <></>}
 
         </View>
 

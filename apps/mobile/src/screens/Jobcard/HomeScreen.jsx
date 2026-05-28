@@ -1,5 +1,5 @@
 import React, { useEffect, useState, memo, useContext, useCallback, useMemo, useRef } from "react";
-import { RefreshControl, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View } from "react-native";
 import { ScanQrCode } from "lucide-react-native";
 import useThemeProvider from "../../Theme/useThemeProvider";
 import AppButton from "../../components/AppButton.jsx";
@@ -17,7 +17,7 @@ import { logError } from "../../Utils/crashLogger.js";
 import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
 
 
-const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
+const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp,selected, c }) => (
   <View style={{
     height:         hp(20),
     padding:        spacing.md,
@@ -34,20 +34,34 @@ const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp, c }) => (
     />
     <AppButton
       style={{ width: wp(80) }}
-      onPress={() => setshowscanner(true)}
+      onPress={() =>{
+       if(!selected) return Alert?.alert("Permission","Permission Denied Please Select Department!");
+      setshowscanner(true)
+      }}
       label="Scan Job Card"
     />
   </View>
 ));
 
-const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table, navigation, user, onWarning }) => (
+
+const TABS = [
+  { key: "pending",   label: "Pending"   },
+  { key: "completed", label: "Completed" },
+];
+
+const Body = memo(({
+  iconSize, spacing, wp, hp, c,
+  dropdown, table, completedtable,
+  navigation, user, onWarning,
+  activeTab, setActiveTab,        
+}) => (
   <View style={{
-    height:         hp(80),
-    padding:        spacing.md,
-    flexDirection:  "column",
-    gap:            20,
-    alignItems:     "center",
-    justifyContent: "flex-start",
+    height:        hp(80),
+    padding:       spacing.md,
+    flexDirection: "column",
+    gap:           20,
+    alignItems:    "center",
+    justifyContent:"flex-start",
   }}>
 
     <AppSearchableDropdown
@@ -61,35 +75,103 @@ const Body = memo(({ iconSize, spacing, wp, hp, c, dropdown, table, navigation, 
       clearable
     />
 
-    <AppTable
-      widthPercent={90}
-      maxHeight={hp(40)}
-      minHeight={hp(20)}
-      columns={table?.columns}
-      data={table?.data}
-      loading={table?.isLoading}
-      striped
-      sortable
-      showIndex
-      refresh={[dropdown?.selected]}
-      pagination
-      serverSide
-      currentPage={table?.page}
-      totalCount={table?.totalCount}
-      pageSize={table?.perPage}
-      pageSizeOptions={[5, 10, 20, 50]}
-      onPageChange={table?.onPageChange}
-      onRowPress={row => {
-        if (!dropdown?.selected) return onWarning();   // ✅ no Alert — uses modal
-        navigation?.navigate("JOB", {
-          jobCardDocId: row?.jobCardId,
-          id:           row?.id,
-          dep:          dropdown?.selected,
-          processId:    row?.processId,
-          userId:       user?.id,
-        });
-      }}
-    />
+    {/* ── Tab Toggle ── */}
+    <View style={{
+      flexDirection:   "row",
+      width:           wp(90),
+      borderRadius:    8,
+      borderWidth:     1,
+      borderColor:     c.border,
+      overflow:        "hidden",
+    }}>
+      {TABS.map(tab => {
+        const isActive = activeTab === tab.key;
+        return (
+          <Pressable
+            key={tab.key}
+            onPress={() => setActiveTab(tab.key)}
+            style={{
+              flex:            1,
+              paddingVertical: 10,
+              alignItems:      "center",
+              backgroundColor: isActive ? c.primary : c.surface,
+            }}
+          >
+            <AppText
+              variant="sm"
+              style={{
+                color:      isActive ? c.background : c.text,
+                fontWeight: isActive ? "600" : "400",
+              }}
+            >
+              {tab.label}
+            </AppText>
+          </Pressable>
+        );
+      })}
+    </View>
+
+    {/* ── Conditional Table ── */}
+    {activeTab === "pending" ? (
+      <AppTable
+        key="pending"
+        widthPercent={90}
+        maxHeight={hp(55)}
+        minHeight={hp(35)}
+        columns={table?.columns}
+        data={table?.data}
+        loading={table?.isLoading}
+        striped
+        sortable
+        refresh={[dropdown?.selected]}
+        pagination
+        serverSide
+        currentPage={table?.page}
+        totalCount={table?.totalCount}
+        pageSize={table?.perPage}
+        onPageChange={table?.onPageChange}
+        onRowPress={row => {
+          if (!dropdown?.selected) return onWarning();
+          navigation?.navigate("JOB", {
+            jobCardDocId: row?.jobCardId,
+            id:           row?.id,
+            dep:          dropdown?.selected,
+            processId:    row?.processId,
+            userId:       user?.id,
+          });
+        }}
+      />
+    ) : (
+      <AppTable
+        key="completed"
+        widthPercent={90}
+        maxHeight={hp(55)}
+        minHeight={hp(35)}
+        columns={completedtable?.columns}
+        data={completedtable?.data}
+        loading={completedtable?.isLoading}
+        striped
+        sortable
+        refresh={[dropdown?.selected]}
+        pagination
+        serverSide
+        currentPage={completedtable?.page}
+        totalCount={completedtable?.totalCount}
+        pageSize={completedtable?.perPage}
+        onPageChange={completedtable?.onPageChange}
+        onRowPress={row => {
+          // if (!dropdown?.selected) return onWarning();
+          // navigation?.navigate("JOB", {
+          //   jobCardDocId: row?.jobCardId,
+          //   id:           row?.id,
+          //   dep:          dropdown?.selected,
+          //   processId:    row?.processId,
+          //   userId:       user?.id,
+          //   viewOnly:     true,   // completed jobs → read-only
+          // });
+        }}
+      />
+    )}
 
   </View>
 ));
@@ -114,11 +196,22 @@ const convertJobCardData = (data, department) =>
     }));
 
 
-export const HomeScreen = ({ navigation } = {}) => {
+const convertCompletedJobCardData = (data, department) =>
+  data
+    ?.map(job => ({
+      jobCardId:    job?.docId,
+      currentState: "COMPLETED",
+      process:    "COMPLETED"   ,
+      processId:    job?.processRoute?.id,
+      id:           job?.id,
+    }));
 
+export const HomeScreen = ({ navigation,route } = {}) => {
+  const {completed} = route?.params ?? {};
   const { showModal, showWarning } = useAppModal();
   const { userDetails }            = useContext(AuthContext);
   const dispatch                   = useDispatch();
+  const [activeTab, setActiveTab] = useState("pending");
 
   const [selected,   setSelected]   = useState(null);
   const [showQrcode, setShowQrcode] = useState(false);
@@ -137,7 +230,7 @@ export const HomeScreen = ({ navigation } = {}) => {
     refetch:   refreshdepartment,
   } = getDepartments;
 
-  const { getJobCardList } = useJobCardHooks({
+  const { getJobCardList,getJobCardCompletedList } = useJobCardHooks({
     getJobCardList_params: {
       pagination:  true,
       pageNumber:  page,
@@ -151,12 +244,16 @@ export const HomeScreen = ({ navigation } = {}) => {
     refetch:   refreshjobcard,
   } = getJobCardList;
 
+  const {  data:      compl_jobCardData,
+    isLoading: isLoadingcompl_Jobs,
+    refetch:   refreshcompl_jobcard,}=getJobCardCompletedList
+
   const {
     data:    takendjobdata,
     isLoading: loadingTakendata,
     isError: isErrortaken,
     error:   takencarderror,
-  } = useGetTakenJobcardQuery({ userid: userDetails?.id ?? null });
+  } = useGetTakenJobcardQuery({ userid: userDetails?.id ?? null },{skip:completed && !userDetails?.id });
 
   // ── Derived ────────────────────────────────────────────────────────
   const dep_options = convertDepartmentData(deptData?.data);
@@ -167,7 +264,14 @@ export const HomeScreen = ({ navigation } = {}) => {
     [jobCardData, selected],
   );
 
+  const completed_jobs = useMemo(
+    () => convertCompletedJobCardData(compl_jobCardData?.data, selected) ?? [],
+    [compl_jobCardData, selected],
+  );
+
   const totalCount = jobCardData?.totalCount ?? 0;
+
+  const totalComp_Count = compl_jobCardData?.totalCount ?? 0 ;
 
   // ── Refresh ────────────────────────────────────────────────────────
   const onRefresh = useCallback(async () => {
@@ -178,6 +282,7 @@ export const HomeScreen = ({ navigation } = {}) => {
       await dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
       await refreshdepartment();
       await refreshjobcard();       // ✅ was missing
+      await refreshcompl_jobcard();
     } catch (err) {
       logError("HOME SCREEN", "REFRESH", "PULL_REFRESH", "Refresh Failed", err);
     } finally {
@@ -193,6 +298,7 @@ export const HomeScreen = ({ navigation } = {}) => {
     hasNavigated.current = true;
 
     const row = takendjobdata?.data;
+    if(!completed)
     navigation?.navigate("JOB", {
       id:          row?.jobCardId,
       dep:         row?.departmentid,
@@ -263,6 +369,7 @@ export const HomeScreen = ({ navigation } = {}) => {
         <Header
           setshowscanner={setShowQrcode}
           iconSize={iconSize}
+          selected={selected}
           spacing={spacing}
           wp={wp}
           hp={hp}
@@ -278,10 +385,20 @@ export const HomeScreen = ({ navigation } = {}) => {
         >
           <QRScanner
             onScan={(data) => {
-              console.log('Scanned:', data);
-              setShowQrcode(false);
+             const scandata = JSON?.parse(data)
+             const row = jobs?.find((fdata)=>fdata.id == scandata?.id)
+            setShowQrcode(false);
+             navigation?.navigate("JOB", {
+            jobCardDocId: row?.jobCardId,
+            id:           row?.id,
+            dep:          selected,
+            processId:    row?.processId,
+            userId:       userDetails?.id,
+            viewOnly:     true,  
+             });
             }}
             onError={(err) => console.error(err)}
+
             onClose={() => setShowQrcode(false)}
             hint="Scan JobCard QR code"
             borderColor="#00FF00"
@@ -299,6 +416,8 @@ export const HomeScreen = ({ navigation } = {}) => {
           wp={wp}
           hp={hp}
           c={c}
+          activeTab={activeTab}
+         setActiveTab={setActiveTab}
           user={userDetails}
           navigation={navigation}
           onWarning={handleDeptWarning}
@@ -316,6 +435,18 @@ export const HomeScreen = ({ navigation } = {}) => {
             perPage,
             totalCount,
             onPageChange: handlePageChange,
+          }}
+
+          completedtable = {{
+
+             columns,
+             data:        completed_jobs,
+             isLoading:  isLoadingcompl_Jobs,
+             page,
+            perPage,
+             totalCount : totalComp_Count,
+             onPageChange: handlePageChange,
+           
           }}
         />
 
