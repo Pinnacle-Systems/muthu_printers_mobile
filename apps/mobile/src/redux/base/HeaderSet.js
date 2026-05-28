@@ -21,7 +21,8 @@ export async function SetHeader(headers, options = {}) {
     headers.set('Accept', 'application/json, */*');
 
     if (method === 'GET' || method === 'HEAD') {
-      headers.set('Accept-Encoding', 'gzip, deflate, br');
+      // Let the native client (OkHttp/URLSession) handle compression transparently.
+      // Do not manually set Accept-Encoding, otherwise it skips auto-decompression.
     }
 
     headers.set('Accept-Language', 'en-US,en;q=0.9');
@@ -30,8 +31,8 @@ export async function SetHeader(headers, options = {}) {
 
     try {
       const [appVersion, appName] = await Promise.all([
-        DeviceInfo.getVersion().catch(() => '1.0'),
-        DeviceInfo.getApplicationName().catch(() => 'MGI'),
+        DeviceInfo.getVersion()?.catch(() => '1.0'),
+        DeviceInfo.getApplicationName()?.catch(() => 'MUDHU'),
       ]);
       headers.set('X-App-Name', appName);
       headers.set('X-App-Version', appVersion);
