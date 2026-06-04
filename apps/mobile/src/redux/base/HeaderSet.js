@@ -3,7 +3,7 @@ import DeviceInfo from 'react-native-device-info';
 import { Alert, Platform } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { createMMKV } from '../../Utils/Storage/mmkv';
-
+import { logError } from '../../Utils/crashLogger.js';
 
 
 // ─── Token Store (outside function, created once) ────────────────
@@ -63,15 +63,15 @@ export async function SetHeader(headers, options = {}) {
         if (token) {
           headers.set('Authorization', `Bearer ${token}`); // ← sent to Express backend
         } else {
-          console.warn('[SetHeader] No access token found');
+          logError('API', 'SetHeader', 'MISSING_TOKEN', new Error('No access token found'));
         }
-      } catch (_) {
-        console.warn('[SetHeader] Failed to attach auth token');
+      } catch (error) {
+        logError('API', 'SetHeader', 'TOKEN_ERROR', error, { message: 'Failed to attach auth token' });
       }
     }
 
   } catch (error) {
-    console.error('[SetHeader] Critical error:', error);
+    logError('API', 'SetHeader', 'CRITICAL_ERROR', error, { message: 'Critical error in SetHeader' });
     headers.set('Accept', 'application/json');
     headers.set('X-Platform', Platform.OS);
     headers.set('X-Request-Timestamp', Date.now().toString());

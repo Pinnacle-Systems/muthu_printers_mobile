@@ -2,7 +2,7 @@ import { fetchBaseQuery } from "@reduxjs/toolkit/query";
 import { APIURL } from "../../Utils/Storage/DotenvFinder";
 import { SetHeader } from "./HeaderSet";
 
-const CustomfetchbaseQury = (BASE) => fetchBaseQuery({
+const CustomFetchBaseQuery = (BASE) => fetchBaseQuery({
 
     baseUrl : BASE ??  APIURL,
      prepareHeaders: async (headers) => {
@@ -12,4 +12,4 @@ const CustomfetchbaseQury = (BASE) => fetchBaseQuery({
         
     })
 
-export default CustomfetchbaseQury
+export default CustomFetchBaseQuery

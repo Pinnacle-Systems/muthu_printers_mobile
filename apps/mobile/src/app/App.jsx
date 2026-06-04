@@ -50,9 +50,10 @@ export const App = () => {
           error instanceof Error ? error : new Error(error?.message ?? 'Unknown error')
         );
       } catch (crashlyticsError) {
-        if (__DEV__) {
-          console.error('[CRASHLYTICS] Failed to record global error:', crashlyticsError);
-        }
+        // Centralized fallback: ensure critical errors are always logged to native stdout/stderr
+        // in case Crashlytics fails, so Logcat/Xcode or secondary loggers can capture them.
+        console.error('[CRASHLYTICS_FALLBACK] Failed to record global error:', crashlyticsError);
+        console.error('[ORIGINAL_ERROR_FALLBACK]', error);
       }
 
       // ✅ Always call previous handler

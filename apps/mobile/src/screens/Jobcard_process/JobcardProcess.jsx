@@ -102,6 +102,20 @@ function JobCardProcess({ navigation, route }) {
   const [refreshing, setRefreshing] = useState(false);
  
     const { showModal } = useAppModal();
+
+  useEffect(() => {
+    if (!id || !processId || !dep || !userId) {
+      Alert.alert(
+        "Invalid Data",
+        "Required job card information is missing. Please try again."
+      );
+      if (navigation.canGoBack()) {
+        navigation.goBack();
+      } else {
+        navigation.navigate("HOME");
+      }
+    }
+  }, [id, processId, dep, userId, navigation]);
   const {data:departmentmachine_data,isLoading : deparmentloading,error} = useGetDepmachinesQuery({id:dep},{skip:!dep})
 
   const [updateprocess,{data:update_data, isLoading : updateloading}] = useUpdateProcessMutation({})
@@ -130,9 +144,9 @@ function JobCardProcess({ navigation, route }) {
   ? Number(currentRoute.sequence) - 1 
   : null;
  const processqty = useMemo(() => 
-  currentRoute?.sequence == 1 
+  Number(currentRoute?.sequence) === 1 
     ? jobcard?.runningQty 
-    : allProcessRoutes?.find((sf) => sf.sequence == sq)?.completedQty,
+    : allProcessRoutes?.find((sf) => Number(sf.sequence) === sq)?.completedQty,
   [jobcard, currentRoute, allProcessRoutes, sq]  // ✅ correct deps
 )
 
@@ -158,9 +172,13 @@ function JobCardProcess({ navigation, route }) {
       const errMsg = errorjobcard?.data?.message
         ?? errorjobcard?.message
         ?? 'Failed to load job card. Please try again.';
+        
+      const readableMessage = typeof errMsg === 'string' ? errMsg : 'Failed to load job card. Please try again.';
+      logError("Job Card Process", "LoadJobCardError", "API_ERROR", errorjobcard, { message: errMsg });
+
       showModal({
         title:        'Job Card Error',
-        message:    JSON?.stringify(errMsg),
+        message:      readableMessage,
         type:         'error',
         confirmLabel: 'Go Back',
         onConfirm:    () => navigation.navigate('HOME'),
@@ -187,8 +205,9 @@ function JobCardProcess({ navigation, route }) {
     var updatep = await updateprocess({ status : "IN_PROGRESS", jobcardId : id,  processId : processId , flag : "START", departmentId:dep, machineId:selectedMachine, userId :userId , id : 0 })?.unwrap()
     
   
-    if(updatep?.statusCode == 0 ||  updatep?.message) {
-     return  Alert?.alert("Error",JSON?.stringify(updatep?.message))
+    if(Number(updatep?.statusCode) !== 1) {
+     logError("Job Card Process", "startProcess", "START_ERROR", updatep?.message, { response: updatep });
+     return Alert?.alert("Failed to Start", updatep?.message || "Unable to start the process. Please check details or try again.");
      }
     
      setpauseable(true)
@@ -198,8 +217,8 @@ function JobCardProcess({ navigation, route }) {
 
    } catch (error) {
 
-       Alert?.alert("Failed",JSON?.stringify(error))
        logError("Job Card Process","startProcess" , "Start-Process", error, { message: "Punch Failed" })
+       Alert?.alert("Failed to Start", "An unexpected error occurred while starting the process.");
     }
   
    }
@@ -208,8 +227,10 @@ function JobCardProcess({ navigation, route }) {
    async function stopProcess() {
   
      try {
-      if(processqty < completedqty) return Alert?.alert("Qty","You have entered Above Process Qty.!")
-        if(!completedqty) return Alert?.alert("Missing","Please enter completed qty.!")
+      const numProcessQty = Number(processqty);
+      const numCompletedQty = Number(completedqty);
+      if(!completedqty || !Number.isFinite(numCompletedQty)) return Alert?.alert("Missing","Please enter a valid completed qty.!")
+      if(Number.isFinite(numProcessQty) && numProcessQty < numCompletedQty) return Alert?.alert("Qty","You have entered Above Process Qty.!")
 
     const punch_id = update_data?.data?.addMain_punch_log?.id ?? punchId
 
@@ -218,8 +239,9 @@ function JobCardProcess({ navigation, route }) {
     var updatep = await updateprocess({ status : "COMPLETED", jobcardId : id,  processId : processId , flag : "STOP", userId :userId , id : punch_id , completedQty : completedqty})?.unwrap()
     
   
-    if(updatep?.statusCode == 0 || updatep?.message){
-     return  Alert?.alert("Error",JSON?.stringify(updatep?.message)) 
+    if(Number(updatep?.statusCode) !== 1){
+     logError("Job Card Process", "stopProcess", "STOP_ERROR", updatep?.message, { response: updatep });
+     return Alert?.alert("Failed to Stop", updatep?.message || "Unable to stop the process. Please try again.");
      }
 
     setcompletedqty(null)
@@ -229,8 +251,8 @@ function JobCardProcess({ navigation, route }) {
 
    } catch (error) {
 
-       Alert?.alert("Failed",JSON?.stringify(error))
        logError("Job Card Process","stopProcess" , "Stop-Process", error, { message: "Punch Failed" })
+       Alert?.alert("Failed to Stop", "An unexpected error occurred while stopping the process.");
     }
 
     
@@ -246,8 +268,9 @@ function JobCardProcess({ navigation, route }) {
      var updatepause = await update_pause_process({  flag : "PAUSE", userId :userId , id : punch_id ,productionlogid : punch_data?.id })?.unwrap()
     
   
-    if(updatepause?.statusCode == 0 || updatepause?.message){
-     return  Alert?.alert("Error",JSON?.stringify(updatepause?.message)) 
+    if(Number(updatepause?.statusCode) !== 1){
+     logError("Job Card Process", "PauseProcess", "PAUSE_ERROR", updatepause?.message, { response: updatepause });
+     return Alert?.alert("Failed to Pause", updatepause?.message || "Unable to pause the process. Please try again.");
      }
 
      // refreshjobcard()
@@ -257,8 +280,8 @@ function JobCardProcess({ navigation, route }) {
 
    } catch (error) {
 
-       Alert?.alert("Failed",JSON?.stringify(error))
        logError("Job Card Process","PauseProcess" , "pause-Process", error, { message: "Punch Failed" })
+       Alert?.alert("Failed to Pause", "An unexpected error occurred while pausing the process.");
     }
 
     
@@ -275,8 +298,9 @@ function JobCardProcess({ navigation, route }) {
      var updatepause = await update_pause_process({  flag : "RESUME", userId :userId , id : punch_id ,productionlogid : punch_data?.id })?.unwrap()
     
   
-    if(updatepause?.statusCode == 0 || updatepause?.message){
-     return  Alert?.alert("Error",JSON?.stringify(updatepause?.message)) 
+    if(Number(updatepause?.statusCode) !== 1){
+     logError("Job Card Process", "ResumeProcess", "RESUME_ERROR", updatepause?.message, { response: updatepause });
+     return Alert?.alert("Failed to Resume", updatepause?.message || "Unable to resume the process. Please try again.");
      }
     setresumable(false)
     setpauseable(true)
@@ -304,11 +328,13 @@ useEffect(()=>{
     setSelectedMachine(machineId)
     setlockmachine(true)
   }
+
   if(punch_data?.id){
-   var resumecheck = punch_data?.pushLogs?.findLast((flast)=>!flast?.resumetime)
-   var pauseheck = punch_data?.pushLogs?.findLast((flast)=>flast?.pushtime)
+   const pushLogsRev = Array.isArray(punch_data?.pushLogs) ? [...punch_data.pushLogs].reverse() : [];
+   var resumecheck = pushLogsRev.find((flast)=>!flast?.resumetime)
+   var pauseheck = pushLogsRev.find((flast)=>flast?.pushtime)
    setpunchId(punch_data?.id)
-   if(resumecheck){ setresumable(true) }else if(pauseheck){  setpauseable(true) }
+   if(resumecheck){ setresumable(true) }else if(pauseheck || punch_data?.id){  setpauseable(true) }
    
 
   }
@@ -473,11 +499,17 @@ useEffect(()=>{
               widthPercent={90}
                   value={completedqty}
                   onChangeText={text => {
+                      if (text === '') {
+                        setcompletedqty('');
+                        return;
+                      }
 
                       const num = Number(text);
-                      if (!isNaN(num) && num > processqty) return; // block values above 100
-                      setcompletedqty(text)
-                    
+                      // Block non-numeric input entirely and values exceeding processqty
+                      if (!Number.isFinite(num)) return;
+                      if (num > Number(processqty)) return;
+                      
+                      setcompletedqty(text);
                    }}
                   keyboardType="number"
                   autoCapitalize="none"

@@ -6,7 +6,7 @@ import AppButton from "../../components/AppButton.jsx";
 import AppText from "../../components/Text.jsx";
 import AppSearchableDropdown from "../../components/AppSearchableDropdown.jsx";
 import AppTable from "../../components/AppTable.jsx";
-import { useDepartmentHooks } from "../../services/hooks/useDeparmentHooks.jsx";
+import { useDepartmentHooks } from "../../services/hooks/useDepartmentHooks.jsx";
 import { useJobCardHooks } from "../../services/hooks/useJobCardHooks.jsx";
 import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
@@ -136,15 +136,38 @@ const Body = memo(({
         totalCount={table?.totalCount}
         pageSize={table?.perPage}
         onPageChange={table?.onPageChange}
+        rowStyle={table?.rowStyle}
         onRowPress={row => {
           if (!dropdown?.selected) return onWarning();
-          navigation?.navigate("JOB", {
-            jobCardDocId: row?.jobCardId,
-            id:           row?.id,
-            dep:          dropdown?.selected,
-            processId:    row?.processId,
-            userId:       user?.id,
-          });
+          
+          const highPriorityJob = table?.data?.find(j => j?.priority && String(j.priority).toUpperCase() === 'HIGH');
+          const isCurrentHighPriority = row?.priority && String(row.priority).toUpperCase() === 'HIGH';
+          
+          const proceed = () => {
+            if (!row?.id || !dropdown?.selected || !row?.processId || !user?.id) {
+              return Alert.alert("Missing Data", "Required job card data is incomplete. Please try again.");
+            }
+            navigation?.navigate("JOB", {
+              jobCardDocId: row?.jobCardId,
+              id:           row?.id,
+              dep:          dropdown?.selected,
+              processId:    row?.processId,
+              userId:       user?.id,
+            });
+          };
+
+          if (highPriorityJob && !isCurrentHighPriority) {
+            Alert.alert(
+              "High Priority Job",
+              `Job ${highPriorityJob.jobCardId} is high priority. Please select Job ${highPriorityJob.jobCardId}`,
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "OK", onPress: proceed }
+              ]
+            );
+          } else {
+            proceed();
+          }
         }}
       />
       {Object.keys(localStatusUpdates || {}).length > 0 && (
@@ -200,7 +223,7 @@ const convertJobCardData = (data, department) =>
     ?.filter(fdata => {
       if (!department) return true;
       const dept = fdata?.processRoute?.Process;
-      return dept?.departmentId == department;
+      return String(dept?.departmentId) === String(department);
     })
     ?.map((job) => ({
       jobCardId:    job?.docId,
@@ -208,6 +231,7 @@ const convertJobCardData = (data, department) =>
       process:      job?.processRoute?.Process?.name,
       processId:    job?.processRoute?.id,
       id:           job?.id,
+      priority  : job?.priority
     }));
 
 
@@ -274,7 +298,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
     isLoading: loadingTakendata,
     isError: isErrortaken,
     error:   takencarderror,
-  } = useGetTakenJobcardQuery({ userid: userDetails?.id ?? null },{skip:completed && !userDetails?.id });
+  } = useGetTakenJobcardQuery({ userid: userDetails?.id ?? null }, { skip: completed || !userDetails?.id });
 
   // ── Derived ────────────────────────────────────────────────────────
   const dep_options = convertDepartmentData(deptData?.data);
@@ -282,7 +306,16 @@ export const HomeScreen = ({ navigation,route } = {}) => {
   // ✅ fixed — both jobCardData and selected in deps
   const jobs = useMemo(
     () => {
-      const baseJobs = convertJobCardData(jobCardData?.data, selected) ?? [];
+      let baseJobs = convertJobCardData(jobCardData?.data, selected) ?? [];
+      
+      baseJobs.sort((a, b) => {
+        const isAHigh = a?.priority && String(a.priority).toUpperCase() === 'HIGH';
+        const isBHigh = b?.priority && String(b.priority).toUpperCase() === 'HIGH';
+        if (isAHigh && !isBHigh) return -1;
+        if (!isAHigh && isBHigh) return 1;
+        return 0;
+      });
+
       return baseJobs.map(job => ({
         ...job,
         currentState: localStatusUpdates[job.id] || job.currentState
@@ -320,20 +353,30 @@ export const HomeScreen = ({ navigation,route } = {}) => {
   // ── Taken job navigation ───────────────────────────────────────────
   useEffect(() => {
     if (!takendjobdata?.data)  return;
-    if (hasNavigated.current)  return;  // ✅ skip if already navigated
 
+    const row = takendjobdata.data;
+    // Check if row actually exists and contains a valid job
+    if (Array.isArray(row) && row.length === 0) return;
+    if (typeof row === 'object' && Object.keys(row).length === 0) return;
+    if (!row.jobCardId) return;
+
+    if (hasNavigated.current)  return;  // ✅ skip if already navigated
     hasNavigated.current = true;
 
-    const row = takendjobdata?.data;
-    if(!completed)
-    navigation?.navigate("JOB", {
-      id:          row?.jobCardId,
-      dep:         row?.departmentid,
-      processId:   row?.processRouteId,
-      userId:      row?.Userid,
-      machineId:   row?.Machineid,
-      punch_data_: takendjobdata?.data,
-    });
+    if(!completed) {
+      if (!row?.jobCardId || !row?.departmentid || !row?.processRouteId || !row?.Userid) {
+        Alert.alert("Incomplete Data", "Taken job card data is missing required fields.");
+        return;
+      }
+      navigation?.navigate("JOB", {
+        id:          row?.jobCardId,
+        dep:         row?.departmentid,
+        processId:   row?.processRouteId,
+        userId:      row?.Userid,
+        machineId:   row?.Machineid,
+        punch_data_: row,
+      });
+    }
   }, [takendjobdata]);
 
   // ── Taken job error ────────────────────────────────────────────────
@@ -373,7 +416,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
     setIsSaving(true);
     try {
       const updates = Object.entries(localStatusUpdates).map(([id, status]) => {
-        const job = jobs.find(j => j.id == id);
+        const job = jobs.find(j => String(j.id) === String(id));
         return {
           processId: job?.processId,
           status,
@@ -382,7 +425,10 @@ export const HomeScreen = ({ navigation,route } = {}) => {
       
       for (const update of updates) {
         if (update.processId) {
-          await updateCurrentProcess(update).unwrap();
+          const res = await updateCurrentProcess(update).unwrap();
+          if (Number(res?.statusCode) !== 1) {
+            throw new Error(res?.message || "Failed to update process status");
+          }
         }
       }
       
@@ -494,9 +540,17 @@ export const HomeScreen = ({ navigation,route } = {}) => {
         >
           <QRScanner
             onScan={(data) => {
+              try {
+                
              const scandata = JSON?.parse(data)
-             const row = jobs?.find((fdata)=>fdata.id == scandata?.id)
-            setShowQrcode(false);
+             const row = jobs?.find((fdata)=>String(fdata.id) === String(scandata?.id))
+             setShowQrcode(false);
+             if(!row)  return Alert?.alert("No Job","Invalid job card QR!")
+             
+             if (!row?.id || !selected || !row?.processId || !userDetails?.id) {
+               return Alert?.alert("Missing Data", "Incomplete job data. Please check department selection and try again.");
+             }
+             
              navigation?.navigate("JOB", {
             jobCardDocId: row?.jobCardId,
             id:           row?.id,
@@ -505,8 +559,14 @@ export const HomeScreen = ({ navigation,route } = {}) => {
             userId:       userDetails?.id,
             viewOnly:     true,  
              });
+
+             
+              } catch (error) {
+                logError("HOME SCREEN", "QR_SCAN", "PARSE_ERROR", error, { rawData: data });
+                Alert?.alert("Invalid QR Code", "The scanned QR code is not a valid Job Card format.");
+              }
             }}
-            onError={(err) => console.error(err)}
+            onError={(err) => logError("HOME SCREEN", "QR_SCAN", "SCANNER_ERROR", err, { message: "QR Scanner component returned an error" })}
 
             onClose={() => setShowQrcode(false)}
             hint="Scan JobCard QR code"
@@ -544,6 +604,12 @@ export const HomeScreen = ({ navigation,route } = {}) => {
             perPage,
             totalCount,
             onPageChange: handlePageChange,
+            rowStyle: (row) => {
+              if (row?.priority && String(row.priority).toUpperCase() === 'HIGH') {
+                return { backgroundColor: '#e8f5e9' }; // Light green
+              }
+              return {};
+            }
           }}
 
           completedtable = {{

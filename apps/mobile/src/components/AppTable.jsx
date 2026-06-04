@@ -283,7 +283,7 @@ const AppTable = ({
             backgroundColor:   rowBg,
             borderBottomColor: c.border,
           },
-          rowStyle,
+          typeof rowStyle === 'function' ? rowStyle(row, rowIndex) : rowStyle,
         ]}>
         {resolvedColumns.map(col => {
           const isIndexCol = col.key === '__index';

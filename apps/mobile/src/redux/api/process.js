@@ -1,9 +1,9 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import CustomfetchbaseQury from "../base/baseurlresolver";
+import CustomFetchBaseQuery from "../base/baseurlresolver";
 
 const PROGRESS_API = createApi({
   reducerPath: "PROGRESS",
-  baseQuery: CustomfetchbaseQury(),
+  baseQuery: CustomFetchBaseQuery(),
   tagTypes: ["Progress"],
   endpoints: (builder) => ({
      updateProcess:  builder.mutation({

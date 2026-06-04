@@ -5,6 +5,7 @@ build/
 coverage/
 .gradle/
 .kotlin/
+.idea/
 local.properties
 
 .env
@@ -16,6 +17,8 @@ Thumbs.db
 
 *.log
 pnpm-debug.log*
+
+google-services.json
 
 # Android
 .cxx/

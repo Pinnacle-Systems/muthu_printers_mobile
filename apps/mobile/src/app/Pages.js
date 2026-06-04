@@ -1,7 +1,7 @@
 import { Bell, LogOut, Moon, Settings, Sun } from "lucide-react-native"
 import AppHeader from "../components/AppHeader"
 import { HomeScreen } from "../screens/Jobcard/HomeScreen"
-import Jobcardproceess from "../screens/Jobcard_process/Jobcardproceess"
+import JobcardProcess from "../screens/Jobcard_process/JobcardProcess"
 
 
 const Pages = [{
@@ -23,7 +23,7 @@ const Pages = [{
 },
 {
     name : "JOB",
-    component : Jobcardproceess,
+    component : JobcardProcess,
     optional: {
     headerShown: true,
     

@@ -1,8 +1,8 @@
-import { useAuthundicateMutation } from "../../redux/api/LoginRtk";
+import { useAuthenticateMutation } from "../../redux/api/LoginRtk";
 import { userProfileStorage } from "../../Utils/Storage/mmkv";
 
 const useUserHooks = (hook) => {
-  const { AuthundicateApi_params: Authparams } = hook || {};
+  const { authenticateApi_params: Authparams } = hook || {};
 
   const userdetails = userProfileStorage?.get();
 
@@ -11,9 +11,9 @@ const useUserHooks = (hook) => {
     ...(userdetails ? userdetails : {}),
   };
 
-  const [AuthundicateApi] = useAuthundicateMutation(commonParams);
+  const [authenticateApi] = useAuthenticateMutation(commonParams);
 
-  return { AuthundicateApi };
+  return { authenticateApi };
 };
 
 export default useUserHooks;

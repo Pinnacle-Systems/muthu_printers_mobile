@@ -65,7 +65,7 @@ function Navigation() {
     <SafeAreaProvider>
         <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <View style={{ flex: 1 }} {...panResponder.panHandlers}>
-    <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS == "android" ? "height" : "padding"} >
+    <KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS === "android" ? "height" : "padding"} >
     <NavigationContainer>
       <Stack.Navigator  screenOptions={{headerShown:false,  keyboardHandlingEnabled: false}} initialRouteName={!isToken ? "LOGIN" : "HOME"}>
          {

@@ -112,7 +112,7 @@ const AppHeader = ({
   };
 
   function themechangefun(){
-    if(thememode  == "white"){
+    if(String(thememode)  === "white"){
            setthememode("dark")
     }else{
           setthememode("white")
@@ -133,7 +133,7 @@ const AppHeader = ({
   const renderRight = () => (
     <View style={[styles.sideSlot, styles.rightGroup]}>
       {rightIcons.map(item => {
-        const Icon =  item?.theme ?   thememode == "white" ?  item.icon["dark"] : item.icon["white"] : item?.icon;
+        const Icon =  item?.theme ?   String(thememode) === "white" ?  item.icon["dark"] : item.icon["white"] : item?.icon;
         const hasBadge = item.badge !== undefined && item.badge > 0;
         return (
           <TouchableOpacity

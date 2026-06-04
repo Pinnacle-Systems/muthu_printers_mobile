@@ -1,9 +1,9 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import CustomfetchbaseQury from "../base/baseurlresolver";
+import CustomFetchBaseQuery from "../base/baseurlresolver";
 
 const DEPARTMENT_API = createApi({
   reducerPath: "DEPARTMENT",
-  baseQuery: CustomfetchbaseQury(),
+  baseQuery: CustomFetchBaseQuery(),
   tagTypes: ["Department"],
 
   endpoints: (builder) => ({
@@ -20,9 +20,9 @@ const DEPARTMENT_API = createApi({
       providesTags: (result, error, id) => [{ type: "Department", id }],
     }),
 
-    // GET /departments/search/:searchKey
+    // GET /departments/search/:key
     searchDepartments: builder.query({
-      query: (params) => ({ url: `/departments/search/${searchKey?.searchKey}`, method: "GET",params }),
+      query: (params) => ({ url: `/departments/search/${params?.key ?? params?.searchKey}`, method: "GET",params }),
       providesTags: ["Department"],
     }),
 

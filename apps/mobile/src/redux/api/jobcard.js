@@ -1,9 +1,9 @@
 import { createApi } from "@reduxjs/toolkit/query/react";
-import CustomfetchbaseQury from "../base/baseurlresolver";
+import CustomFetchBaseQuery from "../base/baseurlresolver";
 
 const JOBCARD_API = createApi({
   reducerPath: "JOBCARD",
-  baseQuery: CustomfetchbaseQury(),
+  baseQuery: CustomFetchBaseQuery(),
   tagTypes: ["JobCard"],
 
   endpoints: (builder) => ({

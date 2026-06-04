@@ -15,7 +15,7 @@ export const StorageConfig = configureStore({
         [JOBCARD_API.reducerPath] : JOBCARD_API.reducer,
         [PROGRESS_API.reducerPath] : PROGRESS_API.reducer
     },
-     middleware : (defaultmidlewhare)=> defaultmidlewhare().concat([LOGINSLICE?.middleware,DEPARTMENT_API.middleware,JOBCARD_API.middleware,PROGRESS_API.middleware])
+     middleware : (defaultMiddleware)=> defaultMiddleware().concat([LOGINSLICE?.middleware,DEPARTMENT_API.middleware,JOBCARD_API.middleware,PROGRESS_API.middleware])
 })
 
 setupListeners(StorageConfig.dispatch)

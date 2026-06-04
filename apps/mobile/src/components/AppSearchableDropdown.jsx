@@ -62,7 +62,7 @@ const AppSearchableDropdown = ({
   const filteredOptions = useMemo(() => {
     if (!query.trim()) return options;
     return options.filter(o =>
-      o.label.toLowerCase().includes(query.toLowerCase()),
+      String(o?.label ?? '').toLowerCase().includes(query.toLowerCase()),
     );
   }, [query, options]);
 

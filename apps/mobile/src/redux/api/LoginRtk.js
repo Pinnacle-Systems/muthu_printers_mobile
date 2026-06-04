@@ -1,14 +1,14 @@
 import { createApi } from "@reduxjs/toolkit/query/react"; 
-import CustomfetchbaseQury from "../base/baseurlresolver";
+import CustomFetchBaseQuery from "../base/baseurlresolver";
 
 const LOGINSLICE = createApi({
     reducerPath: "LOGIN",
-    baseQuery: CustomfetchbaseQury(),
+    baseQuery: CustomFetchBaseQuery(),
 
     tagTypes: ["Auth"],
 
     endpoints: (builder) => ({          
-            authundicate: builder.mutation({ 
+            authenticate: builder.mutation({ 
             query: (credentials) => ({  
                 url: "/users/login",
                 method: "POST",
@@ -24,6 +24,6 @@ const LOGINSLICE = createApi({
 });
 
 
-export const { useAuthundicateMutation } = LOGINSLICE; 
+export const { useAuthenticateMutation } = LOGINSLICE; 
 
 export default LOGINSLICE;

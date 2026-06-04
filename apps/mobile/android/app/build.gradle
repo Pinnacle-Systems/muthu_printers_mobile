@@ -48,8 +48,8 @@ react {
     // extraPackagerArgs = []
 
     /* Hermes Commands */
-    //   The hermes compiler command to run. By default it is 'hermesc'
-    // hermesCommand = "$rootDir/my-custom-hermesc/bin/hermesc"
+    def hermesPath = ["node", "-e", "console.log(require('path').dirname(require.resolve('hermes-compiler/package.json', {paths: [require.resolve('react-native/package.json')]})))"].execute(null, rootProject.projectDir.parentFile).text.trim()
+    hermesCommand = "$hermesPath/hermesc/%OS-BIN%/hermesc"
     //
     //   The list of flags to pass to the Hermes compiler. By default is "-O", "-output-source-map"
     // hermesFlags = ["-O", "-output-source-map"]
@@ -132,3 +132,10 @@ dependencies {
         implementation jscFlavor
     }
 }
+
+
+project.ext.react = [
+    nodeExecutableAndArgs: ["node"],
+    bundleCommand: "bundle",
+    extraPackagerArgs: ["--resolver-option", "platforms=android,ios,native"]
+]
