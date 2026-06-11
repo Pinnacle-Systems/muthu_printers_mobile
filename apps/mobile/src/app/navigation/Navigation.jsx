@@ -10,6 +10,7 @@ import { clearAllStorage } from "../../Utils/Storage/mmkv";
 import {SafeAreaProvider, SafeAreaView} from "react-native-safe-area-context"
 import Pages from "../Pages.js";
 import { AuthContext } from "../providers/AppProviders.jsx";
+import { StorageConfig } from "../../redux/store";
 
 const Stack = createNativeStackNavigator();
 
@@ -21,6 +22,7 @@ function Navigation() {
   const timerRef = useRef(null);
 
   const handleAutoLogout = useCallback(() => {
+    StorageConfig.dispatch({ type: 'USER_LOGOUT' });
     clearAllStorage();
     if (removeToken) removeToken();
     Alert.alert("Session Expired", "You have been logged out due to inactivity.");

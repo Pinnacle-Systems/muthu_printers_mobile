@@ -88,6 +88,7 @@ export const darktheme = {
   placeHolder_text : '#d7d6e075'
 };
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48, }; 
+
 export const iconSize = {
   xs:  12,   // tiny indicators, badges
   sm:  16,   // inline text icons
@@ -99,7 +100,16 @@ export const iconSize = {
 };
 
 
+export const borderWidth = {
+  none:   0,
+  thin:   1,   
+  md:     1.5, 
+  thick:  2,   
+  heavy:  3,   
+};
+
+
 
 export const typography = { h1: { fontSize: 28, fontWeight: '700' }, h2: { fontSize: 22, fontWeight: '600' }, h3: { fontSize: 18, fontWeight: '600' }, body: { fontSize: 15, fontWeight: '400' }, sm: { fontSize: 13, fontWeight: '400' },xs: { fontSize: 8, fontWeight: '400' } }; 
 export const radius = { sm: 6, md: 12, lg: 20, full: 9999, }; 
-export const theme = {    whitetheme,darktheme, spacing, typography, radius , iconSize , Screens};
+export const theme = {    whitetheme,darktheme ,borderWidth , spacing, typography, radius , iconSize , Screens};

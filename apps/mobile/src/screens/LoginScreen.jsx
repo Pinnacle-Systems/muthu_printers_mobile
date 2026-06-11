@@ -200,7 +200,6 @@ const LoginScreen = ({ navigation }) => {
 
       const employee_data = userInfo?.Employee;
 
-      setToken(token); // Update AuthContext state, which will automatically swap navigation stacks
       refreshTokenStorage.set(refresh_token ?? token);
       userProfileStorage.set({
         branchId  : employee_data?.branchId,
@@ -217,6 +216,11 @@ const LoginScreen = ({ navigation }) => {
         username : userInfo?.username || username,
         role     : userInfo?.role     || 'staff',
       });
+
+      // Crucial Fix: Set the token state LAST. 
+      // This triggers the React state re-render that swaps the navigation stack to the App stack.
+      // Doing this last ensures userProfileStorage is fully populated when the new stack mounts.
+      setToken(token); 
 
       logEvent('Login success');
       // Manual navigation removed: App.jsx handles the stack swap automatically when isToken evaluates to true

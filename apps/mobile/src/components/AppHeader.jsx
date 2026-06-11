@@ -11,6 +11,8 @@ import { useNavigation } from '@react-navigation/native';
 import { ChevronLeft } from 'lucide-react-native';
 import useThemeProvider from '../Theme/useThemeProvider';
 import { clearAllStorage } from '../Utils/Storage/mmkv';
+import { AuthContext } from '../app/providers/AppProviders.jsx';
+import { StorageConfig } from '../redux/store';
 
 /**
  * AppHeader — Fully reusable custom header
@@ -69,6 +71,7 @@ const AppHeader = ({
 }) => {
   const navigation = useNavigation();
   const { current_theme: c, theme ,setthememode,thememode } = useThemeProvider();
+  const { removeToken } = React.useContext(AuthContext);
   const { typography, spacing } = theme;
 
   const canGoBack   = navigation.canGoBack();
@@ -122,8 +125,9 @@ const AppHeader = ({
   function logoutFun(){
 
     Alert?.alert("Logout","Do You Want Logout ? ",[{text:"cancel"},{text:"Logout",onPress:()=>{
-     clearAllStorage()
-    navigation?.navigate("LOGIN")
+     StorageConfig.dispatch({ type: 'USER_LOGOUT' });
+     clearAllStorage();
+     if(removeToken) removeToken();
     }}])
     
     

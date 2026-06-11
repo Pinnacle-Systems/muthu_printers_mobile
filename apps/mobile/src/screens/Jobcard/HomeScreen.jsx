@@ -58,7 +58,8 @@ const Body = memo(({
   dropdown, table, completedtable,
   navigation, user, onWarning,
   activeTab, setActiveTab,        
-  localStatusUpdates, onSaveChanges, isSaving
+  localStatusUpdates, onSaveChanges, isSaving,
+  setdepName,depName
 }) => (
   <View style={{
     minHeight:     hp(80),
@@ -75,7 +76,12 @@ const Body = memo(({
       options={dropdown?.options}
       label="Select Department"
       value={dropdown?.selected}
-      onChange={option => dropdown?.setSelected(option ? option.value : null)}
+      onChange={option =>{
+
+     dropdown?.setSelected(option ? option.value : null)
+     dropdown?.setdepName(option ? option.label : null)
+    
+      }}
       placeholder="Select Department"
       clearable
     />
@@ -231,7 +237,8 @@ const convertJobCardData = (data, department) =>
       process:      job?.processRoute?.Process?.name,
       processId:    job?.processRoute?.id,
       id:           job?.id,
-      priority  : job?.priority
+      priority:     job?.priority,
+      machineDetails: job?.machineDetails
     }));
 
 
@@ -240,12 +247,13 @@ const convertCompletedJobCardData = (data, department) =>
     ?.map(job => ({
       jobCardId:    job?.docId,
       currentState: "COMPLETED",
-      process:    "COMPLETED"   ,
+      process:      "COMPLETED",
       processId:    job?.processRoute?.id,
       id:           job?.id,
+      machineDetails: job?.machineDetails
     }));
 
-export const HomeScreen = ({ navigation,route } = {}) => {
+export const  HomeScreen = ({ navigation,route } = {}) => {
   const {completed} = route?.params ?? {};
   const { showModal, showWarning } = useAppModal();
   const { userDetails }            = useContext(AuthContext);
@@ -253,6 +261,7 @@ export const HomeScreen = ({ navigation,route } = {}) => {
   const [activeTab, setActiveTab] = useState("pending");
 
   const [selected,   setSelected]   = useState(null);
+  const [department,setdepartment] = useState("")
   const [showQrcode, setShowQrcode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [page,       setPage]       = useState(1);
@@ -426,9 +435,9 @@ export const HomeScreen = ({ navigation,route } = {}) => {
       for (const update of updates) {
         if (update.processId) {
           const res = await updateCurrentProcess(update).unwrap();
-          if (Number(res?.statusCode) !== 1) {
+           if (Number(res?.statusCode) !== 1) {
             throw new Error(res?.message || "Failed to update process status");
-          }
+           }
         }
       }
       
@@ -447,8 +456,8 @@ export const HomeScreen = ({ navigation,route } = {}) => {
     { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
     { 
       key: 'currentState', 
-      title: 'Current State', 
-      flex: 1.3,
+      title: 'Status', 
+      flex: 1,
       render: (val, row) => {
         if (editingRow?.id === row.id) {
           return (
@@ -495,12 +504,28 @@ export const HomeScreen = ({ navigation,route } = {}) => {
       }
     },
     { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
+      ...(department?.toUpperCase() === 'PRINTING' ? [{
+    key: 'machineDetails',
+    title: 'MACHINE',
+    flex: 1.2,
+    minWidth: 120,
+     render: (val) => (<AppText numberOfLines={2}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>),
+    align: 'center'
+    }] : []),
   ];
 
   const completedColumns = [
     { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
     { key: 'currentState', title: 'Current State', flex: 1.3 },
     { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
+      ...(department?.toUpperCase() === 'PRINTING' ? [{
+    key: 'machineDetails',
+    title: 'MACHINE',
+    flex: 1.2,
+    minWidth: 120,
+     render: (val) => (<AppText numberOfLines={2}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>),
+    align: 'center'
+    }] : []),
   ];
 
   const { current_theme: c, theme } = useThemeProvider();
@@ -595,6 +620,8 @@ export const HomeScreen = ({ navigation,route } = {}) => {
             setSelected,
             options:   dep_options,
             isLoading: isLoadingDep,
+            depName : department,
+            setdepName : setdepartment
           }}
           table={{
             columns: pendingColumns,

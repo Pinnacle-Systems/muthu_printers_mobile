@@ -13,6 +13,7 @@ import {
   TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
+import useThemeProvider from '../Theme/useThemeProvider';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -28,16 +29,18 @@ const AppModal = ({
   showCloseButton      = true,
   closeLabel           = '✕',
   closeOnBackdrop      = true,
-  backdropColor        = 'rgba(0,0,0,0.6)',
+  backdropColor        = 'rgba(0,0,0,0.75)',
   footer,
   scrollable           = false,
   avoidKeyboard        = true,
   statusBarTranslucent = true,
 }) => {
 
+  const { current_theme: c } = useThemeProvider();
+
+  const slideAnim = useRef(new Animated.Value(60)).current;
+  const scaleAnim = useRef(new Animated.Value(0.92)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(100)).current;
-  const scaleAnim = useRef(new Animated.Value(0.95)).current;
 
   const isBottom     = type === 'bottom';
   const isFullscreen = type === 'fullscreen';
@@ -48,7 +51,7 @@ const AppModal = ({
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue        : 1,
-          duration       : 250,
+          duration       : 220,
           useNativeDriver: true,
         }),
         Animated.spring(slideAnim, {
@@ -68,17 +71,17 @@ const AppModal = ({
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue        : 0,
-          duration       : 200,
+          duration       : 180,
           useNativeDriver: true,
         }),
         Animated.timing(slideAnim, {
-          toValue        : 100,
-          duration       : 200,
+          toValue        : 60,
+          duration       : 180,
           useNativeDriver: true,
         }),
         Animated.timing(scaleAnim, {
-          toValue        : 0.95,
-          duration       : 200,
+          toValue        : 0.92,
+          duration       : 180,
           useNativeDriver: true,
         }),
       ]).start();
@@ -86,13 +89,13 @@ const AppModal = ({
   }, [visible]);
 
   const sizeStyles = {
-    small      : { maxHeight: SCREEN_HEIGHT * 0.35 },
-    medium     : { maxHeight: SCREEN_HEIGHT * 0.55 },
-    large      : { maxHeight: SCREEN_HEIGHT * 0.80 },
-    fullscreen : { flex: 1 },
+    small     : { maxHeight: SCREEN_HEIGHT * 0.35 },
+    medium    : { maxHeight: SCREEN_HEIGHT * 0.55 },
+    large     : { maxHeight: SCREEN_HEIGHT * 0.80 },
+    fullscreen: { flex: 1 },
   };
 
-  const animatedStyle = {
+  const modalAnimStyle = {
     opacity  : fadeAnim,
     transform: isCenter
       ? [{ scale: scaleAnim }]
@@ -104,135 +107,153 @@ const AppModal = ({
     ? { showsVerticalScrollIndicator: false, bounces: false }
     : {};
 
-  // ─── Fullscreen — separate simple render ──
+  // ─── Fullscreen ───────────────────────────────────────────────────
   if (isFullscreen) {
     return (
       <Modal
         visible={visible}
-        transparent={false}          // ✅ NOT transparent for fullscreen
-        animationType="slide"        // ✅ simple slide for fullscreen
+        transparent={false}
+        animationType="slide"
         statusBarTranslucent={statusBarTranslucent}
         onRequestClose={onClose}
       >
-        {/* ✅ Full black container */}
-        <View style={styles.fullscreenRoot}>
+        
+        <View style={[styles.fullscreenRoot, { backgroundColor: c.background }]}>
           {children}
         </View>
       </Modal>
     );
   }
 
-  // ─── Center / Bottom Modal ─────────────
+  // ─── Center / Bottom Modal ────────────────────────────────────────
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={true}
       animationType="none"
       statusBarTranslucent={statusBarTranslucent}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={avoidKeyboard
-          ? (Platform.OS === 'ios' ? 'padding' : undefined)
-          : undefined
-        }
-      >
-        {/* Backdrop */}
+      {/*
+        ✅ KEY FIX: The outermost View fills the screen with backdropColor.
+        This is NOT animated — it's always fully opaque when Modal is visible.
+        This is the most reliable way to show backdrop on Android.
+      */}
+      <View style={[styles.root, { backgroundColor: backdropColor }]}>
+
+        {/* Tap backdrop to close */}
         <TouchableWithoutFeedback onPress={closeOnBackdrop ? onClose : undefined}>
-          <Animated.View
-            style={[
-              styles.backdrop,
-              { backgroundColor: backdropColor, opacity: fadeAnim },
-            ]}
-          />
+          <View style={styles.backdropTouchArea} />
         </TouchableWithoutFeedback>
 
-        {/* Position Wrapper */}
-        <View style={[
-          styles.positionWrapper,
-          isBottom && styles.positionBottom,
-          isCenter && styles.positionCenter,
-        ]}>
-          <Animated.View style={[
-            styles.modalBox,
-            isBottom && styles.bottomBox,
-            isCenter && styles.centerBox,
-            sizeStyles[size],
-            animatedStyle,
-          ]}>
+        <KeyboardAvoidingView
+          style={styles.keyboardView}
+          behavior={avoidKeyboard
+            ? (Platform.OS === 'ios' ? 'padding' : undefined)
+            : undefined
+          }
+          pointerEvents="box-none"
+        >
+          {/* Position Wrapper */}
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.positionWrapper,
+              isBottom && styles.positionBottom,
+              isCenter && styles.positionCenter,
+            ]}
+          >
+            <Animated.View style={[
+              styles.modalBox,
+              { backgroundColor: c.surface },
+              isBottom && styles.bottomBox,
+              isCenter && styles.centerBox,
+              sizeStyles[size],
+              modalAnimStyle,
+            ]}>
 
-            {/* Bottom Sheet Handle */}
-            {isBottom && (
-              <View style={styles.handleWrapper}>
-                <View style={styles.handle} />
-              </View>
-            )}
+              {/* Bottom Sheet Handle */}
+              {isBottom && (
+                <View style={styles.handleWrapper}>
+                  <View style={[styles.handle, { backgroundColor: c.border }]} />
+                </View>
+              )}
 
-            {/* Header */}
-            {showHeader && (title || showCloseButton) && (
-              <View style={styles.header}>
-                <View style={styles.headerText}>
-                  {title && (
-                    <Text style={styles.title} numberOfLines={1}>
-                      {title}
-                    </Text>
-                  )}
-                  {subtitle && (
-                    <Text style={styles.subtitle} numberOfLines={2}>
-                      {subtitle}
-                    </Text>
+              {/* Header */}
+              {showHeader && (title || showCloseButton) && (
+                <View style={styles.header}>
+                  <View style={styles.headerText}>
+                    {title && (
+                      <Text style={[styles.title, { color: c.text }]} numberOfLines={1}>
+                        {title}
+                      </Text>
+                    )}
+                    {subtitle && (
+                      <Text
+                        style={[styles.subtitle, { color: c.muted ?? c.textMuted ?? '#9BA3B8' }]}
+                        numberOfLines={2}>
+                        {subtitle}
+                      </Text>
+                    )}
+                  </View>
+                  {showCloseButton && (
+                    <TouchableOpacity
+                      style={[styles.closeBtn, { backgroundColor: c.border }]}
+                      onPress={onClose}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    >
+                      <Text style={[styles.closeText, { color: c.text }]}>{closeLabel}</Text>
+                    </TouchableOpacity>
                   )}
                 </View>
-                {showCloseButton && (
-                  <TouchableOpacity
-                    style={styles.closeBtn}
-                    onPress={onClose}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Text style={styles.closeText}>{closeLabel}</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+              )}
 
-            {/* Divider */}
-            {showHeader && title && <View style={styles.divider} />}
+              {/* Divider */}
+              {showHeader && title && (
+                <View style={[styles.divider, { backgroundColor: c.border }]} />
+              )}
 
-            {/* Body */}
-            <ContentWrapper style={styles.body} {...contentProps}>
-              {children}
-            </ContentWrapper>
+              {/* Body */}
+              <ContentWrapper style={styles.body} {...contentProps}>
+                {children}
+              </ContentWrapper>
 
-            {/* Footer */}
-            {footer && (
-              <>
-                <View style={styles.divider} />
-                <View style={styles.footer}>{footer}</View>
-              </>
-            )}
+              {/* Footer */}
+              {footer && (
+                <>
+                  <View style={[styles.divider, { backgroundColor: c.border }]} />
+                  <View style={styles.footer}>{footer}</View>
+                </>
+              )}
 
-          </Animated.View>
-        </View>
-
-      </KeyboardAvoidingView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
-  flex: {
+
+  // ✅ Root fills entire Modal — backgroundColor = backdropColor
+  root: {
     flex: 1,
   },
 
-  // ✅ Fullscreen root — takes entire screen
-  fullscreenRoot: {
-    flex           : 1,
-    backgroundColor: '#000',
+  // ✅ Invisible full-screen touch area behind the modal for close-on-backdrop
+  backdropTouchArea: {
+    ...StyleSheet.absoluteFillObject,
   },
 
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
+  // ✅ KeyboardAvoidingView sits on top, pointerEvents box-none so touches pass through to backdropTouchArea
+  keyboardView: {
+    flex          : 1,
+    pointerEvents : 'box-none',
+  },
+
+  fullscreenRoot: {
+    flex: 1,
   },
 
   positionWrapper: {
@@ -252,10 +273,9 @@ const styles = StyleSheet.create({
   },
 
   modalBox: {
-    backgroundColor: '#1E2130',
-    borderRadius   : 16,
-    overflow       : 'hidden',
-    width          : '100%',
+    borderRadius: 16,
+    overflow    : 'hidden',
+    width       : '100%',
   },
   centerBox: {
     borderRadius: 16,
@@ -271,10 +291,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   handle: {
-    width          : 40,
-    height         : 4,
-    borderRadius   : 2,
-    backgroundColor: '#ffffff33',
+    width       : 40,
+    height      : 4,
+    borderRadius: 2,
   },
 
   header: {
@@ -292,30 +311,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize  : 17,
     fontWeight: '700',
-    color     : '#FFFFFF',
   },
   subtitle: {
     fontSize : 13,
-    color    : '#9BA3B8',
     marginTop: 2,
   },
   closeBtn: {
-    width          : 32,
-    height         : 32,
-    borderRadius   : 16,
-    backgroundColor: '#ffffff15',
-    alignItems     : 'center',
-    justifyContent : 'center',
+    width         : 32,
+    height        : 32,
+    borderRadius  : 16,
+    alignItems    : 'center',
+    justifyContent: 'center',
   },
   closeText: {
-    color     : '#FFFFFF',
     fontSize  : 14,
     fontWeight: '600',
   },
 
   divider: {
-    height         : 1,
-    backgroundColor: '#ffffff10',
+    height: 1,
   },
 
   body: {

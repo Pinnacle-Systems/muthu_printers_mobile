@@ -74,6 +74,8 @@ const AppTable = ({
   rowStyle,
   selectedValue,
   selectedKey      = 'id',
+  addColumn=[],
+  isAvailable_addclm=false,
 
   // ─── Pagination ───────────────────────
   pagination       = false,
@@ -107,11 +109,23 @@ const AppTable = ({
   const flexTotal  = allColumns.reduce((s, col) => s + (!col.width ? (col.flex ?? 1) : 0), 0);
   const flexSpace  = Math.max(tableWidth - fixedTotal, 0);
 
-  const resolvedColumns = allColumns.map(col => {
+  let resolvedColumns = allColumns.map(col => {
     if (col.width) return { ...col, resolvedWidth: col.width };
     const share = ((col.flex ?? 1) / flexTotal) * flexSpace;
     return { ...col, resolvedWidth: Math.max(share, col.minWidth ?? DEFAULT_MIN_W) };
   });
+
+  if (isAvailable_addclm && addColumn) {
+    const colsToAdd = Array.isArray(addColumn) ? addColumn : [addColumn];
+    colsToAdd.forEach((col, idx) => {
+      let resolvedWidth = col.width;
+      if (!resolvedWidth) {
+        const share = ((col.flex ?? 1) / flexTotal) * flexSpace;
+        resolvedWidth = Math.max(share, col.minWidth ?? DEFAULT_MIN_W);
+      }
+      resolvedColumns.push({ ...col, key: col.key || `added-col-${idx}`, resolvedWidth });
+    });
+  }
 
   const rowWidth = resolvedColumns.reduce((s, col) => s + col.resolvedWidth, 0);
 
@@ -218,12 +232,12 @@ const AppTable = ({
       },
       headerStyle,
     ]}>
-      {resolvedColumns.map(col => {
+      {resolvedColumns.map((col, index) => {
         const isIndexCol = col.key === '__index';
         const isSortable = !isIndexCol && (col.sortable ?? sortable);
         return (
           <TouchableOpacity
-            key={col.key}
+            key={col.key || `header-col-${index}`}
             disabled={!isSortable}
             onPress={() => isSortable && handleSort(col.key)}
             style={[
@@ -285,12 +299,12 @@ const AppTable = ({
           },
           typeof rowStyle === 'function' ? rowStyle(row, rowIndex) : rowStyle,
         ]}>
-        {resolvedColumns.map(col => {
+        {resolvedColumns.map((col, index) => {
           const isIndexCol = col.key === '__index';
           const cellValue  = isIndexCol ? globalIndex : row[col.key];
           return (
             <View
-              key={col.key}
+              key={col.key || `data-col-${index}`}
               style={[
                 styles.dataCell,
                 {
