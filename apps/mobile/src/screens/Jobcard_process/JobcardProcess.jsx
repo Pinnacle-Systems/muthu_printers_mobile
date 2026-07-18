@@ -374,7 +374,7 @@ function JobCardProcess({ navigation, route }) {
       }
 
      const submitBody = {  flag : "PAUSE", userId :userId , id : punch_id ,productionlogid : punch_data?.id  ,  completedQty : finalCompletedQty,
-      wastageQty: wastageQty || 0, remarks: combinedRemarks  ,pauseReason : pauseReason , pauseQty : pauseQty } 
+      wastageQty: wastageQty || 0, remarks: combinedRemarks  ,pauseReason : pauseReason , pauseQty : pauseQty , sizeswise : isCutAndSeal &&  isLabel  } 
 
     if (isCutAndSeal) {
       submitBody.splitSizes = Object.entries(splitQty).map(([sizeId, qty]) => ({ id: Number(sizeId), qty: Number(qty) }));

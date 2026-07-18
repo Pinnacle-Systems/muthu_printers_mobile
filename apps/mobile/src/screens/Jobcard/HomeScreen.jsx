@@ -1,6 +1,6 @@
 import React, { useEffect, useState, memo, useContext, useCallback, useMemo, useRef } from "react";
 import { Alert, Pressable, RefreshControl, ScrollView, StyleSheet, View, TouchableOpacity } from "react-native";
-import { ScanQrCode } from "lucide-react-native";
+import { ScanBarcode } from "lucide-react-native";
 import useThemeProvider from "../../Theme/useThemeProvider";
 import AppButton from "../../components/AppButton.jsx";
 import AppText from "../../components/Text.jsx";
@@ -12,7 +12,7 @@ import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
 import { AuthContext } from "../../app/providers/AppProviders.jsx";
 import { useDispatch } from "react-redux";
-import { Edit, X } from "lucide-react-native";
+import { Pencil, X, ExternalLink } from "lucide-react-native";
 import JOBCARD_API, { useGetTakenJobcardQuery } from "../../redux/api/jobcard.js";
 import { useUpdateCurrentProcessMutation } from "../../redux/api/process.js";
 import { logError } from "../../Utils/crashLogger.js";
@@ -253,6 +253,17 @@ const convertCompletedJobCardData = (data, department) =>
       machineDetails: job?.machineDetails
     }));
 
+const formatStatus = (status) => {
+  if (!status) return "-";
+  const str = String(status).toUpperCase();
+  switch (str) {
+    case "IN_PROGRESS": return "IN_PROG";
+    case "NOT_STARTED": return "NOT_STD";
+    case "COMPLETED":   return "COMPL";
+    default:            return str;
+  }
+};
+
 export const  HomeScreen = ({ navigation,route } = {}) => {
   const {completed} = route?.params ?? {};
   const { showModal, showWarning } = useAppModal();
@@ -270,6 +281,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
   const [localStatusUpdates, setLocalStatusUpdates] = useState({});
   const [editingRow, setEditingRow] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedDetailsRow, setSelectedDetailsRow] = useState(null);
 
   // ✅ prevents re-navigation after refresh
   const hasNavigated = useRef(false);
@@ -338,9 +350,9 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
     [compl_jobCardData, selected],
   );
 
-  const totalCount = jobCardData?.totalCount ?? 0;
+  const totalCount = jobs?.length ?? 0;
 
-  const totalComp_Count = compl_jobCardData?.totalCount ?? 0 ;
+  const totalComp_Count = completed_jobs?.length ?? 0;
 
   // ── Refresh ────────────────────────────────────────────────────────
   const onRefresh = useCallback(async () => {
@@ -453,7 +465,17 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
   };
 
   const pendingColumns = [
-    { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
+    { key: 'process',      title: 'Process',       flex: 1, align: 'left' },
+    ...(department?.toUpperCase() === 'PRINTING' ? [{
+      key: 'machineDetails',
+      title: 'MACHINE',
+      flex: 1,
+      minWidth: 100,
+      render: (val) => {
+        return <AppText numberOfLines={2} style={{ fontSize: typography?.sm?.fontSize ?? 14, color: c?.text }}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>;
+      },
+      align: 'left'
+    }] : []),
     { 
       key: 'currentState', 
       title: 'Status', 
@@ -493,39 +515,44 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
 
         return (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text }}>{val}</AppText>
+            <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text, flexShrink: 1 }}>{formatStatus(val)}</AppText>
             {userDetails?.username?.toLowerCase() === 'admin' && (
               <TouchableOpacity onPress={(e) => { e.stopPropagation(); setEditingRow(row); }}>
-                <Edit size={16} color={c.primary} />
+                <Pencil size={16} color={c.primary} />
               </TouchableOpacity>
             )}
+            <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedDetailsRow(row); }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <ExternalLink size={20} color={c.primary} />
+            </TouchableOpacity>
           </View>
         );
       }
-    },
-    { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
-      ...(department?.toUpperCase() === 'PRINTING' ? [{
-    key: 'machineDetails',
-    title: 'MACHINE',
-    flex: 1.2,
-    minWidth: 120,
-     render: (val) => (<AppText numberOfLines={2}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>),
-    align: 'center'
-    }] : []),
+    }
   ];
 
   const completedColumns = [
-    { key: 'jobCardId',    title: 'Job Card ID',   flex: 1.1 },
-    { key: 'currentState', title: 'Current State', flex: 1.3 },
-    { key: 'process',      title: 'Process',       flex: 0.9, align: 'center' },
-      ...(department?.toUpperCase() === 'PRINTING' ? [{
-    key: 'machineDetails',
-    title: 'MACHINE',
-    flex: 1.2,
-    minWidth: 120,
-     render: (val) => (<AppText numberOfLines={2}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>),
-    align: 'center'
+    { key: 'process',      title: 'Process',       flex: 1, align: 'left' },
+    ...(department?.toUpperCase() === 'PRINTING' ? [{
+      key: 'machineDetails',
+      title: 'MACHINE',
+      flex: 1,
+      minWidth: 100,
+      render: (val) => (<AppText numberOfLines={2} style={{ fontSize: typography?.sm?.fontSize ?? 14, color: c?.text }}>{val?.length > 0 ? val.map(m => m?.Mac?.name).filter(Boolean).join(', ') : "-"}</AppText>),
+      align: 'left'
     }] : []),
+    { 
+      key: 'currentState', 
+      title: 'Status', 
+      flex: 1,
+      render: (val, row) => (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text, flexShrink: 1 }}>{formatStatus(val)}</AppText>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedDetailsRow(row); }} hitSlop={{ top: 10, bottom: 10, left: 25, right: 10 }}>
+            <ExternalLink size={20} color={c.primary} />
+          </TouchableOpacity>
+        </View>
+      )
+    }
   ];
 
   const { current_theme: c, theme } = useThemeProvider();
@@ -598,6 +625,50 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
             borderColor="#00FF00"
             scanInterval={2000}
           />
+        </AppModal>
+
+        {/* ── Details Modal ── */}
+        <AppModal
+          visible={!!selectedDetailsRow}
+          onClose={() => setSelectedDetailsRow(null)}
+          title="Job Card Details"
+          type="center"
+          size="medium"
+        >
+          {selectedDetailsRow && (
+            <View style={{ padding: 10, gap: 12 }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted>Job Card ID:</AppText>
+                <AppText style={{ color: c.text, fontWeight: '600' }}>{selectedDetailsRow.jobCardId}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted>Department:</AppText>
+                <AppText style={{ color: c.text }}>{department || '-'}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted>Process:</AppText>
+                <AppText style={{ color: c.text }}>{selectedDetailsRow.process}</AppText>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted>Status:</AppText>
+                <AppText style={{ color: c.text }}>{selectedDetailsRow.currentState}</AppText>
+              </View>
+              {selectedDetailsRow.priority && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                  <AppText variant="sm" muted>Priority:</AppText>
+                  <AppText style={{ color: c.text }}>{selectedDetailsRow.priority}</AppText>
+                </View>
+              )}
+              {selectedDetailsRow.machineDetails?.length > 0 && (
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                  <AppText variant="sm" muted>Machine Details:</AppText>
+                  <AppText style={{ color: c.text, flex: 1, textAlign: 'right', marginLeft: 20 }}>
+                    {selectedDetailsRow.machineDetails.map(m => m?.Mac?.name).filter(Boolean).join(', ')}
+                  </AppText>
+                </View>
+              )}
+            </View>
+          )}
         </AppModal>
 
         <AppText variant="sm" muted align="center" style={{ marginTop: 20 }}>
