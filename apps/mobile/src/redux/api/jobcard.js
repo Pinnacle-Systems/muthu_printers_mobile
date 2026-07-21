@@ -41,6 +41,12 @@ const JOBCARD_API = createApi({
       providesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
 
+     getAvailableDepmachines: builder.query({
+      query: (params) => ({ url: `/availableMachine`, method: "GET" , params}),
+      providesTags: (result, error, id) => [{ type: "JobCard", id }],
+    }),
+
+
     // POST /jobcards
     createJobCard: builder.mutation({
       query: (body) => ({ url: "/jobCard", method: "POST", body }),
@@ -71,7 +77,8 @@ export const {
   useDeleteJobCardMutation,
   useGetDepmachinesQuery,
   useGetTakenJobcardQuery,
-  useGetCompletedJobCardQuery
+  useGetCompletedJobCardQuery,
+  useGetAvailableDepmachinesQuery
 } = JOBCARD_API;
 
 export default JOBCARD_API;

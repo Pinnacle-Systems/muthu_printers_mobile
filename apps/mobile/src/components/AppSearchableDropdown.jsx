@@ -8,6 +8,7 @@ import {
   FlatList,
   StyleSheet,
   Animated,
+  Alert,
 } from 'react-native';
 import { ChevronDown, Search, Check, X } from 'lucide-react-native';
 import useThemeProvider from '../Theme/useThemeProvider';
@@ -45,11 +46,18 @@ const AppSearchableDropdown = ({
   widthPercent,
   containerStyle,
   triggerStyle,
+  disable_key,
+  concat_key,
+  concat_prefix,
+  concat_subfix
+  
 }) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const searchRef = useRef(null);
+
+
 
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, typography, radius, Screens } = theme;
@@ -279,6 +287,7 @@ const AppSearchableDropdown = ({
                 const isSelected = item.value === value;
                 return (
                   <TouchableOpacity
+                    disabled={item?.[disable_key]}
                     onPress={() => handleSelect(item)}
                     style={[
                       styles.optionRow,
@@ -286,8 +295,8 @@ const AppSearchableDropdown = ({
                         paddingHorizontal: spacing.md,
                         paddingVertical: spacing.sm,
                         backgroundColor: isSelected
-                          ? c.primaryLight ?? `${c.primary}15`
-                          : 'transparent',
+                          ?  item?.[disable_key]  ? c. border :  c.primaryLight ?? `${c.primary}15`
+                          : item?.[disable_key]  ? c. border  : 'transparent',
                       },
                     ]}>
                     <Text
@@ -300,7 +309,7 @@ const AppSearchableDropdown = ({
                           flex: 1,
                         },
                       ]}>
-                      {item.label}
+                      {item.label}  {item?.[concat_key] &&  item?.[disable_key] ? concat_prefix+ " " + item?.[concat_key] + " " +  concat_subfix : ""}
                     </Text>
                     {isSelected && <Check size={15} color={c.primary} />}
                   </TouchableOpacity>
