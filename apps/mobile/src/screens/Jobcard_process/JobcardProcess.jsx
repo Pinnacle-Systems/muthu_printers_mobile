@@ -186,8 +186,7 @@ function JobCardProcess({ navigation, route }) {
 
   const { showModal } = useAppModal();
 
-
-    const {
+  const {
     data: jobcardRes,
     refetch: refreshjobcard,
     isLoading,
@@ -198,13 +197,11 @@ function JobCardProcess({ navigation, route }) {
     { skip: !id },
   );
 
-  
   const jobcard = jobcardRes?.data;
   var punch_data = punch_data_ ?? jobcardRes?.data?.punch_data;
   var machineId = machineId_ ?? jobcardRes?.data?.punch_data?.Machineid;
   const isLabel = jobcardRes?.data?.itemType === "LABEL";
   const isnotLabel = jobcardRes?.data?.itemType !== "LABEL";
-
 
   useEffect(() => {
     if (!id || !processId || !dep || !userId) {
@@ -289,11 +286,11 @@ function JobCardProcess({ navigation, route }) {
       departmentmachine_data?.data?.machines?.map((m) => ({
         label: m?.name,
         value: m?.id,
-        busy:m?.busy,
-        useby:m?.busy_by?.username+" - "+m?.JobCard?.docId
+        busy: m?.busy,
+        useby: m?.busy_by?.username + " - " + m?.JobCard?.docId,
       })) ?? [],
 
-      [departmentmachine_data]
+    [departmentmachine_data],
     // [jobcard, dep],
   );
 
@@ -496,7 +493,7 @@ function JobCardProcess({ navigation, route }) {
         wastageQty: wastageQty || 0,
         remarks: combinedRemarks,
         pauseReason: pauseReason,
-        reason:reason,
+        reason: reason,
         pauseQty: pauseQty,
         sizeswise: isCutAndSeal && isLabel,
       };
@@ -561,7 +558,7 @@ function JobCardProcess({ navigation, route }) {
         id: punch_id,
         productionlogid: punch_data?.id,
       })?.unwrap();
-      Alert?.alert("FILLL",JSON?.stringify(updatepause))
+      Alert?.alert("FILLL", JSON?.stringify(updatepause));
 
       if (Number(updatepause?.statusCode) === 1) {
         logError(
@@ -576,20 +573,20 @@ function JobCardProcess({ navigation, route }) {
           updatepause?.message ||
             "Unable to resume — this machine is currently allocated to another employee.",
 
-             [
-           {
-        text: "Cancel",
-        onPress: () => console.log("Cancelled"),
-      style: "cancel",
-      },
-     {
-      text: "Stop Process",
-      onPress: () => stopProcess(),
-      style: "default",
-    },
-  ],
-  { cancelable: true }
-              );
+          [
+            {
+              text: "Cancel",
+              onPress: () => console.log("Cancelled"),
+              style: "cancel",
+            },
+            {
+              text: "Stop Process",
+              onPress: () => stopProcess(),
+              style: "default",
+            },
+          ],
+          { cancelable: true },
+        );
       }
       setresumable(false);
       setpauseable(true);
@@ -898,7 +895,7 @@ function JobCardProcess({ navigation, route }) {
             disable_key={"busy"}
             concat_key={"useby"}
             concat_prefix={"("}
-             concat_subfix={")"}
+            concat_subfix={")"}
             label="Select Machine"
             disabled={lockmachine}
             value={selectedMachine}
