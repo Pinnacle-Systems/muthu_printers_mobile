@@ -9,6 +9,9 @@ import com.facebook.react.ReactNativeHost
 import com.facebook.react.ReactPackage
 import com.facebook.react.defaults.DefaultReactHost.getDefaultReactHost
 import com.facebook.react.defaults.DefaultReactNativeHost
+import com.facebook.react.modules.network.OkHttpClientProvider
+import com.facebook.react.modules.network.OkHttpClientFactory
+import okhttp3.OkHttpClient
 
 class MainApplication : Application(), ReactApplication {
 
@@ -33,6 +36,15 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    
+    OkHttpClientProvider.setOkHttpClientFactory(object : OkHttpClientFactory {
+        override fun createNewNetworkModuleClient(): OkHttpClient {
+            return OkHttpClientProvider.createClientBuilder()
+                .dns(CustomDns())
+                .build()
+        }
+    })
+
     loadReactNative(this)
   }
 }

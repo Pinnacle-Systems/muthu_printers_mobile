@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "839258226365",
+    "project_id": "muthu-10718",
+    "storage_bucket": "muthu-10718.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:839258226365:android:7951d8cdaed1906d9341d4",
+        "android_client_info": {
+          "package_name": "com.muthuprintersmobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDR0SF6WY8zQP2s-3hzg4xehCgu84Kq7D0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
