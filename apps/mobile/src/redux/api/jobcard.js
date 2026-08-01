@@ -7,37 +7,61 @@ const JOBCARD_API = createApi({
   tagTypes: ["JobCard"],
 
   endpoints: (builder) => ({
-
     // GET /jobcards
     getJobCards: builder.query({
-      query: (params) => ({ url: "/jobCard", method: "GET",params }),
+      query: (params) => ({ url: "/jobCard", method: "GET", params }),
       providesTags: ["JobCard"],
     }),
 
     // GET /jobcards/jobCardList
     getJobCardList: builder.query({
-      query: (params) => ({ url: "/jobCard/get_mob_joblist", method: "GET",params }),
+      query: (params) => ({
+        url: "/jobCard/get_mob_joblist",
+        method: "GET",
+        params,
+      }),
       providesTags: ["JobCard"],
     }),
 
-     getTakenJobcard: builder.query({
-      query: (params) => ({ url: "/jobCard/getEmployeeTakenJobcard", method: "GET",params }),
+    getTakenJobcard: builder.query({
+      query: (params) => ({
+        url: "/jobCard/getEmployeeTakenJobcard",
+        method: "GET",
+        params,
+      }),
       providesTags: ["JobCard"],
     }),
 
     // GET /jobcards/:id
     getJobCard: builder.query({
-      query: (params) => ({ url: `/jobCard/get_mob_jobcard`, method: "GET" , params}),
+      query: (params) => ({
+        url: `/jobCard/get_mob_jobcard`,
+        method: "GET",
+        params,
+      }),
       providesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
 
-     getCompletedJobCard: builder.query({
-      query: (params) => ({ url: `/jobCard/get_mob_compl_jobcard`, method: "GET" , params}),
+    getCompletedJobCard: builder.query({
+      query: (params) => ({
+        url: `/jobCard/get_mob_compl_jobcard`,
+        method: "GET",
+        params,
+      }),
       providesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
 
-      getDepmachines: builder.query({
-      query: (params) => ({ url: `/jobCard/getMachinebydep`, method: "GET" , params}),
+    getDepmachines: builder.query({
+      query: (params) => ({
+        url: `/jobCard/getMachinebydep`,
+        method: "GET",
+        params,
+      }),
+      providesTags: (result, error, id) => [{ type: "JobCard", id }],
+    }),
+
+    getAvailableDepmachines: builder.query({
+      query: (params) => ({ url: `/availableMachine`, method: "GET", params }),
       providesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
 
@@ -49,7 +73,11 @@ const JOBCARD_API = createApi({
 
     // PUT /jobcards/:id
     updateJobCard: builder.mutation({
-      query: ({ id, ...body }) => ({ url: `/jobCard/updateJobCardState/${id}`, method: "PUT", body }),
+      query: ({ id, ...body }) => ({
+        url: `/jobCard/updateJobCardState/${id}`,
+        method: "PUT",
+        body,
+      }),
       invalidatesTags: (result, error, { id }) => [{ type: "JobCard", id }],
     }),
 
@@ -58,7 +86,6 @@ const JOBCARD_API = createApi({
       query: (id) => ({ url: `/jobCard/${id}`, method: "DELETE" }),
       invalidatesTags: (result, error, id) => [{ type: "JobCard", id }],
     }),
-
   }),
 });
 
@@ -71,7 +98,8 @@ export const {
   useDeleteJobCardMutation,
   useGetDepmachinesQuery,
   useGetTakenJobcardQuery,
-  useGetCompletedJobCardQuery
+  useGetCompletedJobCardQuery,
+  useGetAvailableDepmachinesQuery,
 } = JOBCARD_API;
 
 export default JOBCARD_API;

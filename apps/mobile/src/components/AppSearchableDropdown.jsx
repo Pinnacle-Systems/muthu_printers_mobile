@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from 'react';
+import React, { useState, useRef, useMemo } from "react";
 import {
   View,
   Text,
@@ -8,9 +8,10 @@ import {
   FlatList,
   StyleSheet,
   Animated,
-} from 'react-native';
-import { ChevronDown, Search, Check, X } from 'lucide-react-native';
-import useThemeProvider from '../Theme/useThemeProvider';
+  Alert,
+} from "react-native";
+import { ChevronDown, Search, Check, X } from "lucide-react-native";
+import useThemeProvider from "../Theme/useThemeProvider";
 
 /**
  * AppSearchableDropdown
@@ -32,22 +33,26 @@ import useThemeProvider from '../Theme/useThemeProvider';
  */
 const AppSearchableDropdown = ({
   label,
-  placeholder = 'Select an option',
-  searchPlaceholder = 'Search...',
+  placeholder = "Select an option",
+  searchPlaceholder = "Search...",
   options = [],
   value,
   onChange,
   leftIcon: LeftIcon,
   error,
   disabled = false,
-  emptyText = 'No results found',
+  emptyText = "No results found",
   clearable = true,
   widthPercent,
   containerStyle,
   triggerStyle,
+  disable_key,
+  concat_key,
+  concat_prefix,
+  concat_subfix,
 }) => {
   const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState("");
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const searchRef = useRef(null);
 
@@ -57,26 +62,24 @@ const AppSearchableDropdown = ({
 
   const resolvedWidth = widthPercent ? wp(widthPercent) : undefined;
 
-  const selectedOption = options.find(o => o.value === value);
+  const selectedOption = options.find((o) => o.value === value);
 
   const filteredOptions = useMemo(() => {
     if (!query.trim()) return options;
-    return options.filter(o =>
-      String(o?.label ?? '').toLowerCase().includes(query.toLowerCase()),
+    return options.filter((o) =>
+      String(o?.label ?? "")
+        .toLowerCase()
+        .includes(query.toLowerCase()),
     );
   }, [query, options]);
 
-  const borderColor = !!error
-    ? c.error
-    : open
-    ? c.primary
-    : c.border;
+  const borderColor = !!error ? c.error : open ? c.primary : c.border;
 
   const iconColor = open ? c.textMuted : c.placeHolder_text;
 
   const openDropdown = () => {
     if (disabled) return;
-    setQuery('');
+    setQuery("");
     Animated.timing(rotateAnim, {
       toValue: 1,
       duration: 200,
@@ -93,10 +96,10 @@ const AppSearchableDropdown = ({
       useNativeDriver: true,
     }).start();
     setOpen(false);
-    setQuery('');
+    setQuery("");
   };
 
-  const handleSelect = option => {
+  const handleSelect = (option) => {
     onChange?.(option);
     closeDropdown();
   };
@@ -107,12 +110,11 @@ const AppSearchableDropdown = ({
 
   const chevronRotate = rotateAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: ['0deg', '180deg'],
+    outputRange: ["0deg", "180deg"],
   });
 
   return (
     <View style={[{ marginBottom: spacing.md }, containerStyle]}>
-
       {/* ── Optional label ─────────────────────────────────────────────── */}
       {!!label && (
         <Text
@@ -124,7 +126,8 @@ const AppSearchableDropdown = ({
               marginBottom: spacing.xs,
               marginLeft: spacing.xs,
             },
-          ]}>
+          ]}
+        >
           {label}
         </Text>
       )}
@@ -136,18 +139,20 @@ const AppSearchableDropdown = ({
         style={[
           styles.triggerWrap,
           {
-            backgroundColor: disabled ? c.surfaceDisabled ?? c.surface : c.surface,
+            backgroundColor: disabled
+              ? (c.surfaceDisabled ?? c.surface)
+              : c.surface,
             borderColor,
             borderRadius: radius.md,
             paddingHorizontal: spacing.md,
             height: 50,
             opacity: disabled ? 0.5 : 1,
             width: resolvedWidth,
-            alignSelf: resolvedWidth ? 'center' : 'auto',
+            alignSelf: resolvedWidth ? "center" : "auto",
           },
           triggerStyle,
-        ]}>
-
+        ]}
+      >
         {LeftIcon && (
           <LeftIcon size={17} color={iconColor} style={styles.leftIcon} />
         )}
@@ -162,7 +167,8 @@ const AppSearchableDropdown = ({
               color: selectedOption ? c.text : c.placeHolder_text,
               flex: 1,
             },
-          ]}>
+          ]}
+        >
           {selectedOption ? selectedOption.label : placeholder}
         </Text>
 
@@ -171,7 +177,8 @@ const AppSearchableDropdown = ({
           <TouchableOpacity
             onPress={handleClear}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={{ marginRight: 6 }}>
+            style={{ marginRight: 6 }}
+          >
             <X size={15} color={iconColor} />
           </TouchableOpacity>
         )}
@@ -192,7 +199,8 @@ const AppSearchableDropdown = ({
               marginTop: spacing.xs,
               marginLeft: spacing.xs,
             },
-          ]}>
+          ]}
+        >
           {error}
         </Text>
       )}
@@ -202,12 +210,13 @@ const AppSearchableDropdown = ({
         visible={open}
         transparent
         animationType="fade"
-        onRequestClose={closeDropdown}>
+        onRequestClose={closeDropdown}
+      >
         <TouchableOpacity
           style={styles.overlay}
           activeOpacity={1}
-          onPress={closeDropdown}>
-
+          onPress={closeDropdown}
+        >
           <TouchableOpacity
             activeOpacity={1}
             style={[
@@ -217,11 +226,11 @@ const AppSearchableDropdown = ({
                 borderRadius: radius.md,
                 borderColor: c.border,
                 width: resolvedWidth ?? undefined,
-                alignSelf: resolvedWidth ? 'center' : 'auto',
+                alignSelf: resolvedWidth ? "center" : "auto",
                 marginHorizontal: resolvedWidth ? 0 : spacing.md,
               },
-            ]}>
-
+            ]}
+          >
             {/* ── Search bar ───────────────────────────────────────────── */}
             <View
               style={[
@@ -231,7 +240,8 @@ const AppSearchableDropdown = ({
                   paddingHorizontal: spacing.md,
                   paddingVertical: spacing.sm,
                 },
-              ]}>
+              ]}
+            >
               <Search size={16} color={c.textMuted} style={styles.searchIcon} />
               <TextInput
                 ref={searchRef}
@@ -250,8 +260,9 @@ const AppSearchableDropdown = ({
               />
               {query.length > 0 && (
                 <TouchableOpacity
-                  onPress={() => setQuery('')}
-                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                  onPress={() => setQuery("")}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                >
                   <X size={15} color={c.textMuted} />
                 </TouchableOpacity>
               )}
@@ -260,7 +271,7 @@ const AppSearchableDropdown = ({
             {/* ── Options list ─────────────────────────────────────────── */}
             <FlatList
               data={filteredOptions}
-              keyExtractor={item => String(item.value)}
+              keyExtractor={(item) => String(item.value)}
               bounces={false}
               keyboardShouldPersistTaps="handled"
               style={{ maxHeight: 260 }}
@@ -270,7 +281,8 @@ const AppSearchableDropdown = ({
                     style={[
                       styles.emptyText,
                       { fontSize: typography.sm.fontSize, color: c.textMuted },
-                    ]}>
+                    ]}
+                  >
                     {emptyText}
                   </Text>
                 </View>
@@ -279,6 +291,7 @@ const AppSearchableDropdown = ({
                 const isSelected = item.value === value;
                 return (
                   <TouchableOpacity
+                    disabled={item?.[disable_key]}
                     onPress={() => handleSelect(item)}
                     style={[
                       styles.optionRow,
@@ -286,28 +299,43 @@ const AppSearchableDropdown = ({
                         paddingHorizontal: spacing.md,
                         paddingVertical: spacing.sm,
                         backgroundColor: isSelected
-                          ? c.primaryLight ?? `${c.primary}15`
-                          : 'transparent',
+                          ? item?.[disable_key]
+                            ? c.border
+                            : (c.primaryLight ?? `${c.primary}15`)
+                          : item?.[disable_key]
+                            ? c.border
+                            : "transparent",
                       },
-                    ]}>
+                    ]}
+                  >
                     <Text
                       style={[
                         styles.optionText,
                         {
                           fontSize: typography.body.fontSize,
                           color: isSelected ? c.primary : c.text,
-                          fontWeight: isSelected ? '600' : '400',
+                          fontWeight: isSelected ? "600" : "400",
                           flex: 1,
                         },
-                      ]}>
-                      {item.label}
+                      ]}
+                    >
+                      {item.label}{" "}
+                      {item?.[concat_key] && item?.[disable_key]
+                        ? concat_prefix +
+                          " " +
+                          item?.[concat_key] +
+                          " " +
+                          concat_subfix
+                        : ""}
                     </Text>
                     {isSelected && <Check size={15} color={c.primary} />}
                   </TouchableOpacity>
                 );
               }}
               ItemSeparatorComponent={() => (
-                <View style={[styles.separator, { backgroundColor: c.border }]} />
+                <View
+                  style={[styles.separator, { backgroundColor: c.border }]}
+                />
               )}
             />
           </TouchableOpacity>
@@ -319,11 +347,11 @@ const AppSearchableDropdown = ({
 
 const styles = StyleSheet.create({
   label: {
-    fontWeight: '500',
+    fontWeight: "500",
   },
   triggerWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
   },
   triggerText: {
@@ -333,20 +361,20 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   errorText: {
-    fontWeight: '400',
+    fontWeight: "400",
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
-    justifyContent: 'center',
+    backgroundColor: "rgba(0,0,0,0.35)",
+    justifyContent: "center",
   },
   sheet: {
     borderWidth: 1.5,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   searchIcon: {
@@ -356,8 +384,8 @@ const styles = StyleSheet.create({
     height: 40,
   },
   optionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     minHeight: 48,
   },
   optionText: {},
@@ -365,10 +393,10 @@ const styles = StyleSheet.create({
     height: StyleSheet.hairlineWidth,
   },
   emptyWrap: {
-    alignItems: 'center',
+    alignItems: "center",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
 
