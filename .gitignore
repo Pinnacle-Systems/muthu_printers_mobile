@@ -6,6 +6,7 @@ coverage/
 .gradle/
 .kotlin/
 .idea/
+.pnpm-store/
 local.properties
 
 .env

@@ -1,12 +1,14 @@
 import { fetchBaseQuery } from "@reduxjs/toolkit/query";
-import { APIURL } from "../../Utils/Storage/DotenvFinder";
+import { API_BASE_URL } from "../../Utils/Storage/DotenvFinder";
 import { SetHeader } from "./HeaderSet";
 
 const CustomFetchBaseQuery = (BASE) => fetchBaseQuery({
 
-    baseUrl : BASE ??  APIURL,
-     prepareHeaders: async (headers) => {
-             await SetHeader(headers)
+    baseUrl : BASE ?? API_BASE_URL,
+     prepareHeaders: async (headers, { endpoint }) => {
+             await SetHeader(headers, {
+               isLoginRequest: endpoint === "authenticate",
+             })
              return headers
            }, timeout: 80000
         

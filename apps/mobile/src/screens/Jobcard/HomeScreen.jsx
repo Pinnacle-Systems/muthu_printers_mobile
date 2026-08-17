@@ -264,6 +264,10 @@ const formatStatus = (status) => {
   }
 };
 
+const isExpectedRequestAbort = (error) =>
+  error?.status === "FETCH_ERROR" &&
+  /abort/i.test(String(error?.error ?? ""));
+
 export const  HomeScreen = ({ navigation,route } = {}) => {
   const {completed} = route?.params ?? {};
   const { showModal, showWarning } = useAppModal();
@@ -403,6 +407,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
   // ── Taken job error ────────────────────────────────────────────────
   useEffect(() => {
     if (!isErrortaken) return;
+    if (isExpectedRequestAbort(takencarderror)) return;
 
     logError(
       "HOME SCREEN", "API_CALL", "API",
@@ -418,7 +423,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
       cancelLabel:  'Cancel',
       onConfirm:    () => dispatch(JOBCARD_API.util.invalidateTags(["JobCard"])),
     });
-  }, [isErrortaken]);
+  }, [isErrortaken, takencarderror, dispatch, showModal]);
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handlePageChange = (newPage, newPerPage) => {

@@ -44,7 +44,9 @@ export async function SetHeader(headers, options = {}) {
     try {
       const deviceId = await DeviceInfo.getUniqueId().catch(() => 'unknown');
       headers.set('x-device-id', deviceId);
-    } catch (_) {}
+    } catch (_) {
+      headers.set('x-device-id', 'unknown');
+    }
 
     try {
       const net = await NetInfo.fetch();
@@ -62,8 +64,6 @@ export async function SetHeader(headers, options = {}) {
 
         if (token) {
           headers.set('Authorization', `Bearer ${token}`); // ← sent to Express backend
-        } else {
-          logError('API', 'SetHeader', 'MISSING_TOKEN', new Error('No access token found'));
         }
       } catch (error) {
         logError('API', 'SetHeader', 'TOKEN_ERROR', error, { message: 'Failed to attach auth token' });
