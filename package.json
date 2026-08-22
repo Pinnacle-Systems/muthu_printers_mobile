@@ -10,7 +10,8 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "format": "prettier --write .",
-    "clean": "turbo clean && pnpm -r exec rimraf dist .turbo"
+    "clean": "turbo clean && pnpm -r exec rimraf dist .turbo",
+    "android" : "pnpm --filter @app/mobile  android "
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

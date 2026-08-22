@@ -18,6 +18,7 @@ import { useUpdateCurrentProcessMutation } from "../../redux/api/process.js";
 import { logError } from "../../Utils/crashLogger.js";
 import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 
 const Header = memo(({ setshowscanner, iconSize, spacing, wp, hp,selected, c }) => (
@@ -260,6 +261,7 @@ const formatStatus = (status) => {
     case "IN_PROGRESS": return "IN_PROG";
     case "NOT_STARTED": return "NOT_STD";
     case "COMPLETED":   return "COMPL";
+    case "PARTIALLY_COMPLETED":   return "IN_PROG";
     default:            return str;
   }
 };
@@ -485,6 +487,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
       key: 'currentState', 
       title: 'Status', 
       flex: 1,
+      align: 'center',
       render: (val, row) => {
         if (editingRow?.id === row.id) {
           return (
@@ -519,7 +522,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
         }
 
         return (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', flex: 1, alignSelf: 'stretch' }}>
             <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text, flexShrink: 1 }}>{formatStatus(val)}</AppText>
             {userDetails?.username?.toLowerCase() === 'admin' && (
               <TouchableOpacity onPress={(e) => { e.stopPropagation(); setEditingRow(row); }}>
@@ -549,8 +552,9 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
       key: 'currentState', 
       title: 'Status', 
       flex: 1,
+      align: 'center',
       render: (val, row) => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-evenly', flex: 1, alignSelf: 'stretch' }}>
           <AppText style={{ fontSize: typography.sm?.fontSize ?? 14, color: c.text, flexShrink: 1 }}>{formatStatus(val)}</AppText>
           <TouchableOpacity onPress={(e) => { e.stopPropagation(); setSelectedDetailsRow(row); }} hitSlop={{ top: 10, bottom: 10, left: 25, right: 10 }}>
             <ExternalLink size={20} color={c.primary} />
@@ -569,7 +573,7 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
   return (
     <View style={styles.container}>
       <ScrollView
-        contentContainerStyle={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -642,32 +646,32 @@ export const  HomeScreen = ({ navigation,route } = {}) => {
         >
           {selectedDetailsRow && (
             <View style={{ padding: 10, gap: 12 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                <AppText variant="sm" muted>Job Card ID:</AppText>
-                <AppText style={{ color: c.text, fontWeight: '600' }}>{selectedDetailsRow.jobCardId}</AppText>
+              <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted style={{ width: 130 }}>Job Card ID:</AppText>
+                <AppText style={{ color: c.text, fontWeight: '600', flex: 1, textAlign: 'left' }}>{selectedDetailsRow.jobCardId}</AppText>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                <AppText variant="sm" muted>Department:</AppText>
-                <AppText style={{ color: c.text }}>{department || '-'}</AppText>
+              <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted style={{ width: 130 }}>Department:</AppText>
+                <AppText style={{ color: c.text, flex: 1, textAlign: 'left' }}>{department || '-'}</AppText>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                <AppText variant="sm" muted>Process:</AppText>
-                <AppText style={{ color: c.text }}>{selectedDetailsRow.process}</AppText>
+              <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted style={{ width: 130 }}>Process:</AppText>
+                <AppText style={{ color: c.text, flex: 1, textAlign: 'left' }}>{selectedDetailsRow.process}</AppText>
               </View>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                <AppText variant="sm" muted>Status:</AppText>
-                <AppText style={{ color: c.text }}>{selectedDetailsRow.currentState}</AppText>
+              <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                <AppText variant="sm" muted style={{ width: 130 }}>Status:</AppText>
+                <AppText style={{ color: c.text, flex: 1, textAlign: 'left' }}>{selectedDetailsRow.currentState}</AppText>
               </View>
               {selectedDetailsRow.priority && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                  <AppText variant="sm" muted>Priority:</AppText>
-                  <AppText style={{ color: c.text }}>{selectedDetailsRow.priority}</AppText>
+                <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                  <AppText variant="sm" muted style={{ width: 130 }}>Priority:</AppText>
+                  <AppText style={{ color: c.text, flex: 1, textAlign: 'left' }}>{selectedDetailsRow.priority}</AppText>
                 </View>
               )}
               {selectedDetailsRow.machineDetails?.length > 0 && (
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
-                  <AppText variant="sm" muted>Machine Details:</AppText>
-                  <AppText style={{ color: c.text, flex: 1, textAlign: 'right', marginLeft: 20 }}>
+                <View style={{ flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: c.border, paddingBottom: 8 }}>
+                  <AppText variant="sm" muted style={{ width: 130 }}>Machine Details:</AppText>
+                  <AppText style={{ color: c.text, flex: 1, textAlign: 'left' }}>
                     {selectedDetailsRow.machineDetails.map(m => m?.Mac?.name).filter(Boolean).join(', ')}
                   </AppText>
                 </View>
