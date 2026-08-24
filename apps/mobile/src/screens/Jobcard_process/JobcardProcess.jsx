@@ -263,7 +263,7 @@ function JobCardProcess({ navigation, route }) {
   const firstAllocation = allocationDtls?.[0];
   const canStart = firstAllocation?.isInHouse === true;
   const isProcessStarted =
-    pauseable || resumable || !!punchId || !!punch_data?.id;
+    pauseable || resumable || !!punchId || (!!punch_data?.id && !punch_data?.endTime);
 
 
   useEffect(() => {
@@ -618,7 +618,7 @@ function JobCardProcess({ navigation, route }) {
       setlockmachine(true);
     }
 
-    if (punch_data?.id) {
+    if (punch_data?.id && !punch_data?.endTime) {
       const pushLogsRev = Array.isArray(punch_data?.pushLogs)
         ? [...punch_data.pushLogs].reverse()
         : [];
