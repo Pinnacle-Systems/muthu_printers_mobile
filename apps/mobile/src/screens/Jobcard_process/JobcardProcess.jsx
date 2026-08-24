@@ -233,30 +233,38 @@ function JobCardProcess({ navigation, route }) {
     { data: update_pause_data, isLoading: update_pause_loading },
   ] = useUpdatePushProcessMutation({});
 
-  const currentRoute = jobcard?.processRoute;
-
   const allProcessRoutes = jobcard?.allProcessRoutes ?? [];
+  const currentRoute = allProcessRoutes.find((r) => String(r.id) === String(processId)) || jobcard?.processRoute;
   const isCutAndSeal =
     currentRoute?.Process?.name?.toLowerCase()?.includes("cut & seal") ?? false;
 
+
+   
   const sq = currentRoute?.sequence ? Number(currentRoute.sequence) - 1 : null;
   const processqty = useMemo(
     () => {
+      // if (currentRoute?.status === "PARTIALLY_COMPLETED" && currentRoute?.pendingQty > 0) {
+      //   return currentRoute.pendingQty;
+      // }
+
+  
       if (isLabel) return jobcard?.rollQty;
 
-      return Number(currentRoute?.sequence) === 1
+      return Number(currentRoute?.sequence) === 1 && currentRoute?.status === "NOT_STARTED"
         ? jobcard?.runningQty
-        : allProcessRoutes?.find((sf) => Number(sf.sequence) === sq)
-            ?.completedQty;
+        :  jobcard?.processIncomingQty ?? currentRoute?.processIncomingQty;
     },
-    [jobcard, currentRoute, allProcessRoutes, sq], // ✅ correct deps
+    [jobcard, currentRoute, allProcessRoutes, sq, isLabel],
   );
+
+
 
   const allocationDtls = currentRoute?.productionAllocationDtls ?? [];
   const firstAllocation = allocationDtls?.[0];
   const canStart = firstAllocation?.isInHouse === true;
   const isProcessStarted =
-    pauseable || resumable || !!punchId || !!punch_data?.id;
+    pauseable || resumable || !!punchId || (!!punch_data?.id && !punch_data?.endTime);
+
 
   useEffect(() => {
     if (!isProcessStarted) return;
@@ -386,6 +394,7 @@ function JobCardProcess({ navigation, route }) {
       const numProcessQty = Number(processqty);
       const numCompletedQty = Number(completedqty);
 
+
       if (isCutAndSeal) {
         const hasAnyQty = Object.values(splitQty).some(
           (val) => Number(val) > 0,
@@ -422,7 +431,9 @@ function JobCardProcess({ navigation, route }) {
         id: punch_id,
         completedQty: completedqty,
         wastageQty: wastageQty || 0,
-        remarks: remarks || "",
+        remarks: remarks || "",   
+        processIncomingId : jobcard?.processIncomingId  ?? currentRoute?.processIncomingId,
+        processIncomingQty: jobcard?.processIncomingQty ?? currentRoute?.processIncomingQty
       };
 
       if (isCutAndSeal) {
@@ -607,7 +618,7 @@ function JobCardProcess({ navigation, route }) {
       setlockmachine(true);
     }
 
-    if (punch_data?.id) {
+    if (punch_data?.id && !punch_data?.endTime) {
       const pushLogsRev = Array.isArray(punch_data?.pushLogs)
         ? [...punch_data.pushLogs].reverse()
         : [];
@@ -628,6 +639,46 @@ function JobCardProcess({ navigation, route }) {
     setpunchId(punch_id?.id);
     if (punch_id?.id) setlockmachine(true);
   }, [update_data]);
+
+  useEffect(() => {
+    if (jobcard) {
+      const allRoutes = jobcard.allProcessRoutes || [];
+      const curr = currentRoute;
+      const prevSq = curr?.sequence ? Number(curr.sequence) - 1 : null;
+
+      if (prevSq) {
+        const prevRoute = allRoutes.find((r) => Number(r.sequence) === prevSq);
+        if (prevRoute) {
+          const isPrevCompleted = prevRoute.status === "COMPLETED";
+          const isPrevPartiallyCompleted = prevRoute.status === "PARTIALLY_COMPLETED" && (prevRoute.completedQty > 0);
+          const prevAllocation = prevRoute.productionAllocationDtls?.[0];
+          
+          const isOutside = prevAllocation && prevAllocation.isInHouse === false;
+
+          if (isOutside && !isPrevCompleted && !isPrevPartiallyCompleted) {
+            const prevProcessName = prevRoute?.Process?.name || "Previous";
+            Alert.alert(
+              "Information",
+              `The previous process (${prevProcessName}) is outside and still not completed.`,
+              [
+                {
+                  text: "OK",
+                  onPress: () => {
+                    if (navigation.canGoBack()) {
+                      navigation.goBack();
+                    } else {
+                      navigation.navigate("HOME");
+                    }
+                  }
+                }
+              ],
+              { cancelable: false }
+            );
+          }
+        }
+      }
+    }
+  }, [jobcard]);
 
   if (isLoading || deparmentloading || updateloading) {
     return (

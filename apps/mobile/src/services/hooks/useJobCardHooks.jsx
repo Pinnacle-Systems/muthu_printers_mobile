@@ -60,4 +60,5 @@ export const useJobCardHooks = (hook) => {
     updateJobCard,
     deleteJobCard,
   };
+  
 };
