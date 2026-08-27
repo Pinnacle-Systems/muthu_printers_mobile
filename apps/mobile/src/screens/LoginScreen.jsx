@@ -161,23 +161,14 @@ const LoginScreen = ({ navigation }) => {
   const validate = () => {
     let valid = true;
     const newErrors = { username: '', password: '' };
-
     if (!username) {
       newErrors.username = 'Username is required';
       valid = false;
-    } else if (username.length < 3) {
-      newErrors.username = 'Username must be at least 3 characters';
-      valid = false;
-    }
-
+    } 
     if (!password) {
       newErrors.password = 'Password is required';
       valid = false;
-    } else if (password.length < 4) {
-      newErrors.password = 'Password must be at least 6 characters';
-      valid = false;
-    }
-
+    } 
     setErrors(newErrors);
     return valid;
   };
@@ -226,7 +217,7 @@ const LoginScreen = ({ navigation }) => {
       // Manual navigation removed: App.jsx handles the stack swap automatically when isToken evaluates to true
 
     } catch (error) {
-      logError('LOGIN', 'Handle Login', 'AUTH', error, 'AUTH_ERROR', {
+      logError('LOGIN', 'Handle Login', 'AUTH', 'AUTH_ERROR', {
         screen: 'LoginScreen',
         username,
       });

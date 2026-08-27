@@ -126,7 +126,7 @@ const ActionButton = ({ label, onPress, disabled, color, c, styles }) => (
 );
 
 function JobCardProcess({ navigation, route }) {
-  const { jobCardDocId, id, dep, processId, machineId_, userId, punch_data_ } =
+  const { jobCardDocId, id, dep, processId, machine_id, userId, punch_datas } =
     route?.params ?? {};
   const dispatch = useDispatch();
   const [punchId, setpunchId] = useState(null);
@@ -198,8 +198,9 @@ function JobCardProcess({ navigation, route }) {
   );
 
   const jobcard = jobcardRes?.data;
-  var punch_data = punch_data_ ?? jobcardRes?.data?.punch_data;
-  var machineId = machineId_ ?? jobcardRes?.data?.punch_data?.Machineid;
+  var punch_data = punch_datas ?? jobcardRes?.data?.punch_data;
+  var machineId = machine_id ?? jobcardRes?.data?.punch_data?.Machineid;
+  var machineEndCheck = machine_id ?? jobcardRes?.data?.punch_data?.endDate;
   const isLabel = jobcardRes?.data?.itemType === "LABEL";
   const isnotLabel = jobcardRes?.data?.itemType !== "LABEL";
 
@@ -227,6 +228,7 @@ function JobCardProcess({ navigation, route }) {
 
   const [updateprocess, { data: update_data, isLoading: updateloading }] =
     useUpdateProcessMutation({});
+
 
   const [
     update_pause_process,
@@ -613,10 +615,11 @@ function JobCardProcess({ navigation, route }) {
   }
 
   useEffect(() => {
-    if (machineId) {
+    if (machineId && (!machineEndCheck || machineEndCheck !== "" )) {
       setSelectedMachine(machineId);
       setlockmachine(true);
     }
+
 
     if (punch_data?.id && !punch_data?.endTime) {
       const pushLogsRev = Array.isArray(punch_data?.pushLogs)
@@ -767,7 +770,7 @@ function JobCardProcess({ navigation, route }) {
       <View style={styles.card}>
         <InfoRow label="Job Card ID" c={c} spacing={spacing} styles={styles}>
           <AppText style={{ color: c.textMuted }}>
-            {jobcard?.docId ?? jobCardId}
+            {jobcard?.docId ?? jobCardDocId  ?? "N/A"}
           </AppText>
         </InfoRow>
 
