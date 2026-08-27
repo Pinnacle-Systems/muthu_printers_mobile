@@ -96,6 +96,8 @@ const Body = memo(
     localStatusUpdates,
     onSaveChanges,
     isSaving,
+    scannedJobCardFilter,
+    setScannedJobCardFilter,
   }) => (
     <View
       style={{
@@ -158,6 +160,28 @@ const Body = memo(
           );
         })}
       </View>
+
+      {/* ── Clear Filter Banner ── */}
+      {scannedJobCardFilter && (
+        <View style={{
+          flexDirection: "row",
+          width: wp(90),
+          backgroundColor: c.primary + '15',
+          padding: 10,
+          borderRadius: 8,
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderColor: c.primary,
+          borderWidth: 1,
+        }}>
+          <AppText style={{ color: c.text, flex: 1, fontWeight: "600" }}>
+            Filtered by JobCard: {scannedJobCardFilter}
+          </AppText>
+          <TouchableOpacity onPress={() => setScannedJobCardFilter(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <X size={20} color={c.text} />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Conditional Table ── */}
       {activeTab === "pending" ? (
@@ -335,6 +359,7 @@ export const HomeScreen = ({ navigation, route } = {}) => {
 
   const [localStatusUpdates, setLocalStatusUpdates] = useState({});
   const [isSaving, setIsSaving] = useState(false);
+  const [scannedJobCardFilter, setScannedJobCardFilter] = useState(null);
   const [selectedDetailsRow, setSelectedDetailsRow] = useState(null);
 
   // ✅ prevents re-navigation after refresh
@@ -387,6 +412,10 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   const jobs = useMemo(() => {
     let baseJobs = convertJobCardData(jobCardData?.data, selected) ?? [];
 
+    if (scannedJobCardFilter) {
+      baseJobs = baseJobs.filter((job) => String(job.jobCardId) === String(scannedJobCardFilter));
+    }
+
     baseJobs.sort((a, b) => {
       const isAHigh =
         a?.priority && String(a.priority).toUpperCase() === "HIGH";
@@ -401,12 +430,15 @@ export const HomeScreen = ({ navigation, route } = {}) => {
       ...job,
       currentState: localStatusUpdates[job.id] || job.currentState,
     }));
-  }, [jobCardData, selected, localStatusUpdates]);
+  }, [jobCardData, selected, localStatusUpdates, scannedJobCardFilter]);
 
-  const completed_jobs = useMemo(
-    () => convertCompletedJobCardData(compl_jobCardData?.data, selected) ?? [],
-    [compl_jobCardData, selected],
-  );
+  const completed_jobs = useMemo(() => {
+    let baseComp = convertCompletedJobCardData(compl_jobCardData?.data, selected) ?? [];
+    if (scannedJobCardFilter) {
+      baseComp = baseComp.filter((job) => String(job.jobCardId) === String(scannedJobCardFilter));
+    }
+    return baseComp;
+  }, [compl_jobCardData, selected, scannedJobCardFilter]);
 
   const totalCount = jobs?.length ?? 0;
 
@@ -726,14 +758,8 @@ export const HomeScreen = ({ navigation, route } = {}) => {
                   );
                 }
 
-                navigation?.navigate("JOB", {
-                  jobCardDocId: row?.jobCardId,
-                  id: row?.id,
-                  dep: selected,
-                  processId: row?.processId,
-                  userId: userDetails?.id,
-                  viewOnly: true,
-                });
+                setScannedJobCardFilter(row?.jobCardId);
+                setActiveTab("pending");
               } catch (error) {
                 logError("HOME SCREEN", "QR_SCAN", "PARSE_ERROR", error, {
                   rawData: data,
@@ -931,6 +957,8 @@ export const HomeScreen = ({ navigation, route } = {}) => {
           localStatusUpdates={localStatusUpdates}
           onSaveChanges={handleSaveChanges}
           isSaving={isSaving}
+          scannedJobCardFilter={scannedJobCardFilter}
+          setScannedJobCardFilter={setScannedJobCardFilter}
         />
       </ScrollView>
     </View>

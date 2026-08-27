@@ -85,7 +85,7 @@ export const darktheme = {
   success:    '#0D9E6E',  // icons & badges
   error:      '#F05252',  // 4.6:1 — AA pass
   warning:    '#F0A500',  // icons & badges only
-  placeHolder_text : '#d7d6e075'
+  placeHolder_text : '#d7d6e075',
 };
 export const spacing = { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48, }; 
 
