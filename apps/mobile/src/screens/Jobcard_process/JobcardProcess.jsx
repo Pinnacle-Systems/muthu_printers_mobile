@@ -197,6 +197,8 @@ function JobCardProcess({ navigation, route }) {
     { skip: !id },
   );
 
+
+
   const jobcard = jobcardRes?.data;
   var punch_data = punch_datas ?? jobcardRes?.data?.punch_data;
   var machineId = machine_id ?? jobcardRes?.data?.punch_data?.Machineid;
@@ -409,7 +411,7 @@ function JobCardProcess({ navigation, route }) {
         if (!completedqty || !Number.isFinite(numCompletedQty))
           return Alert?.alert(
             "Missing",
-            "Please enter a valid completed qty.!",
+            "Please enter a valid completed qty.",
           );
         if (Number.isFinite(numProcessQty) && numProcessQty < numCompletedQty)
           return Alert?.alert("Qty", "You have entered Above Process Qty.!");
@@ -571,7 +573,6 @@ function JobCardProcess({ navigation, route }) {
         id: punch_id,
         productionlogid: punch_data?.id,
       })?.unwrap();
-      Alert?.alert("FILLL", JSON?.stringify(updatepause));
 
       if (Number(updatepause?.statusCode) === 1) {
         logError(
@@ -615,7 +616,10 @@ function JobCardProcess({ navigation, route }) {
   }
 
   useEffect(() => {
-    if (machineId && (!machineEndCheck || machineEndCheck !== "")) {
+
+    
+
+    if (machineId && (!machineEndCheck || machineEndCheck === "")) {
       setSelectedMachine(machineId);
       setlockmachine(true);
     }
@@ -636,10 +640,12 @@ function JobCardProcess({ navigation, route }) {
   }, [machineId, punch_data]);
 
   useEffect(() => {
+   
     if (!update_data) return;
     const punch_id = update_data?.data?.addMain_punch_log;
     setpunchId(punch_id?.id);
-    if (punch_id?.id) setlockmachine(true);
+  
+    if (punch_id?.id ) setlockmachine(true);
   }, [update_data]);
 
   useEffect(() => {
