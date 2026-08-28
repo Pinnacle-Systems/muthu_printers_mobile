@@ -313,7 +313,7 @@ const AppSearchableDropdown = ({
                         styles.optionText,
                         {
                           fontSize: typography.body.fontSize,
-                          color: isSelected ? c.primary : c.text,
+                          color: isSelected ? c.primary :  item?.[concat_key] && item?.[disable_key]  ? c.error : c.text,
                           fontWeight: isSelected ? "600" : "400",
                           flex: 1,
                         },

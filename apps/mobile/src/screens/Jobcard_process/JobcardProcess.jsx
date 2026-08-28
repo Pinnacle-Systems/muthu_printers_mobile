@@ -126,7 +126,7 @@ const ActionButton = ({ label, onPress, disabled, color, c, styles }) => (
 );
 
 function JobCardProcess({ navigation, route }) {
-  const { jobCardDocId, id, dep, processId, machineId_, userId, punch_data_ } =
+  const { jobCardDocId, id, dep, processId, machine_id, userId, punch_datas } =
     route?.params ?? {};
   const dispatch = useDispatch();
   const [punchId, setpunchId] = useState(null);
@@ -198,8 +198,9 @@ function JobCardProcess({ navigation, route }) {
   );
 
   const jobcard = jobcardRes?.data;
-  var punch_data = punch_data_ ?? jobcardRes?.data?.punch_data;
-  var machineId = machineId_ ?? jobcardRes?.data?.punch_data?.Machineid;
+  var punch_data = punch_datas ?? jobcardRes?.data?.punch_data;
+  var machineId = machine_id ?? jobcardRes?.data?.punch_data?.Machineid;
+  var machineEndCheck = machine_id ?? jobcardRes?.data?.punch_data?.endDate;
   const isLabel = jobcardRes?.data?.itemType === "LABEL";
   const isnotLabel = jobcardRes?.data?.itemType !== "LABEL";
 
@@ -234,37 +235,37 @@ function JobCardProcess({ navigation, route }) {
   ] = useUpdatePushProcessMutation({});
 
   const allProcessRoutes = jobcard?.allProcessRoutes ?? [];
-  const currentRoute = allProcessRoutes.find((r) => String(r.id) === String(processId)) || jobcard?.processRoute;
+  const currentRoute =
+    allProcessRoutes.find((r) => String(r.id) === String(processId)) ||
+    jobcard?.processRoute;
   const isCutAndSeal =
     currentRoute?.Process?.name?.toLowerCase()?.includes("cut & seal") ?? false;
 
-
-   
   const sq = currentRoute?.sequence ? Number(currentRoute.sequence) - 1 : null;
-  const processqty = useMemo(
-    () => {
-      // if (currentRoute?.status === "PARTIALLY_COMPLETED" && currentRoute?.pendingQty > 0) {
-      //   return currentRoute.pendingQty;
-      // }
+  const processqty = useMemo(() => {
+    if (
+      currentRoute?.status === "PARTIALLY_COMPLETED" &&
+      currentRoute?.pendingQty > 0
+    ) {
+      return currentRoute.pendingQty;
+    }
 
-  
-      if (isLabel) return jobcard?.rollQty;
+    if (isLabel) return jobcard?.rollQty;
 
-      return Number(currentRoute?.sequence) === 1 && currentRoute?.status === "NOT_STARTED"
-        ? jobcard?.runningQty
-        :  jobcard?.processIncomingQty ?? currentRoute?.processIncomingQty;
-    },
-    [jobcard, currentRoute, allProcessRoutes, sq, isLabel],
-  );
-
-
+    return Number(currentRoute?.sequence) === 1 &&
+      currentRoute?.status === "NOT_STARTED"
+      ? jobcard?.runningQty
+      : (currentRoute?.processIncomingQty ?? jobcard?.processIncomingQty);
+  }, [jobcard, currentRoute, allProcessRoutes, sq, isLabel]);
 
   const allocationDtls = currentRoute?.productionAllocationDtls ?? [];
   const firstAllocation = allocationDtls?.[0];
   const canStart = firstAllocation?.isInHouse === true;
   const isProcessStarted =
-    pauseable || resumable || !!punchId || (!!punch_data?.id && !punch_data?.endTime);
-
+    pauseable ||
+    resumable ||
+    !!punchId ||
+    (!!punch_data?.id && !punch_data?.endTime);
 
   useEffect(() => {
     if (!isProcessStarted) return;
@@ -394,7 +395,6 @@ function JobCardProcess({ navigation, route }) {
       const numProcessQty = Number(processqty);
       const numCompletedQty = Number(completedqty);
 
-
       if (isCutAndSeal) {
         const hasAnyQty = Object.values(splitQty).some(
           (val) => Number(val) > 0,
@@ -431,9 +431,11 @@ function JobCardProcess({ navigation, route }) {
         id: punch_id,
         completedQty: completedqty,
         wastageQty: wastageQty || 0,
-        remarks: remarks || "",   
-        processIncomingId : jobcard?.processIncomingId  ?? currentRoute?.processIncomingId,
-        processIncomingQty: jobcard?.processIncomingQty ?? currentRoute?.processIncomingQty
+        remarks: remarks || "",
+        processIncomingId:
+          currentRoute?.processIncomingId ?? jobcard?.processIncomingId,
+        processIncomingQty:
+          currentRoute?.processIncomingQty ?? jobcard?.processIncomingQty,
       };
 
       if (isCutAndSeal) {
@@ -613,7 +615,7 @@ function JobCardProcess({ navigation, route }) {
   }
 
   useEffect(() => {
-    if (machineId) {
+    if (machineId && (!machineEndCheck || machineEndCheck !== "")) {
       setSelectedMachine(machineId);
       setlockmachine(true);
     }
@@ -650,10 +652,13 @@ function JobCardProcess({ navigation, route }) {
         const prevRoute = allRoutes.find((r) => Number(r.sequence) === prevSq);
         if (prevRoute) {
           const isPrevCompleted = prevRoute.status === "COMPLETED";
-          const isPrevPartiallyCompleted = prevRoute.status === "PARTIALLY_COMPLETED" && (prevRoute.completedQty > 0);
+          const isPrevPartiallyCompleted =
+            prevRoute.status === "PARTIALLY_COMPLETED" &&
+            prevRoute.completedQty > 0;
           const prevAllocation = prevRoute.productionAllocationDtls?.[0];
-          
-          const isOutside = prevAllocation && prevAllocation.isInHouse === false;
+
+          const isOutside =
+            prevAllocation && prevAllocation.isInHouse === false;
 
           if (isOutside && !isPrevCompleted && !isPrevPartiallyCompleted) {
             const prevProcessName = prevRoute?.Process?.name || "Previous";
@@ -669,10 +674,10 @@ function JobCardProcess({ navigation, route }) {
                     } else {
                       navigation.navigate("HOME");
                     }
-                  }
-                }
+                  },
+                },
               ],
-              { cancelable: false }
+              { cancelable: false },
             );
           }
         }
@@ -767,7 +772,7 @@ function JobCardProcess({ navigation, route }) {
       <View style={styles.card}>
         <InfoRow label="Job Card ID" c={c} spacing={spacing} styles={styles}>
           <AppText style={{ color: c.textMuted }}>
-            {jobcard?.docId ?? jobCardId}
+            {jobcard?.docId ?? jobCardDocId ?? "N/A"}
           </AppText>
         </InfoRow>
 
@@ -945,7 +950,7 @@ function JobCardProcess({ navigation, route }) {
             options={machineOptions}
             disable_key={"busy"}
             concat_key={"useby"}
-            concat_prefix={"("}
+            concat_prefix={"- In Use ("}
             concat_subfix={")"}
             label="Select Machine"
             disabled={lockmachine}
