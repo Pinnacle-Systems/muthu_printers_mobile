@@ -593,11 +593,7 @@ function JobCardProcess({ navigation, route }) {
       });
     }
   }
-
   useEffect(() => {
-
-    
-
     if (machineId && (!machineEndCheck || machineEndCheck === "")) {
       setSelectedMachine(machineId);
       setlockmachine(true);
@@ -619,7 +615,6 @@ function JobCardProcess({ navigation, route }) {
   }, [machineId, punch_data]);
 
   useEffect(() => {
-   
     if (!update_data) return;
     const punch_id = update_data?.data?.addMain_punch_log;
     setpunchId(punch_id?.id);
