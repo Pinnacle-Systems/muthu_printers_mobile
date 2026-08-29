@@ -39,7 +39,7 @@ import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const Header = memo(
-  ({ setshowscanner, iconSize, spacing, wp, hp, selected, c }) => (
+  ({ setshowscanner,onRefresh, iconSize, spacing, wp, hp, selected, c }) => (
     <View
       style={{
         height: hp(20),
@@ -60,11 +60,7 @@ const Header = memo(
       <AppButton
         style={{ width: wp(90) }}
         onPress={() => {
-          if (!selected)
-            return Alert?.alert(
-              "Permission",
-              "Permission Denied Please Select Department!",
-            );
+          onRefresh?.()
           setshowscanner(true);
         }}
         label="Scan Job Card"
@@ -296,11 +292,13 @@ const Body = memo(
 const convertDepartmentData = (data) =>
   data?.map((dep) => ({ label: dep?.name, value: dep?.id }));
 
-const convertJobCardData = (data, department) =>
+const convertJobCardData = (data, department , scannedJobCardFilter) =>
   data
     ?.filter((fdata) => {
+        const dept = fdata?.processRoute?.Process;
+      if(scannedJobCardFilter && department) return (String(fdata?.docId) === String(scannedJobCardFilter)) && (String(dept?.departmentId) === String(department))
+      if(scannedJobCardFilter) return String(fdata?.docId) === String(scannedJobCardFilter)
       if (!department) return true;
-      const dept = fdata?.processRoute?.Process;
       return String(dept?.departmentId) === String(department);
     })
     ?.map((job) => ({
@@ -313,7 +311,7 @@ const convertJobCardData = (data, department) =>
       machineDetails: job?.machineDetails,
     }));
 
-const convertCompletedJobCardData = (data, department) =>
+const convertCompletedJobCardData = (data) =>
   data?.map((job) => ({
     jobCardId: job?.docId,
     currentState: "COMPLETED",
@@ -410,7 +408,7 @@ export const HomeScreen = ({ navigation, route } = {}) => {
 
   // ✅ fixed — both jobCardData and selected in deps
   const jobs = useMemo(() => {
-    let baseJobs = convertJobCardData(jobCardData?.data, selected) ?? [];
+    let baseJobs = convertJobCardData(jobCardData?.data, selected , scannedJobCardFilter) ?? [];
 
     if (scannedJobCardFilter) {
       baseJobs = baseJobs.filter((job) => String(job.jobCardId) === String(scannedJobCardFilter));
@@ -736,6 +734,7 @@ export const HomeScreen = ({ navigation, route } = {}) => {
           selected={selected}
           spacing={spacing}
           wp={wp}
+          onRefresh={onRefresh}
           hp={hp}
           c={c}
         />
@@ -759,7 +758,6 @@ export const HomeScreen = ({ navigation, route } = {}) => {
 
                 if (
                   !row?.id ||
-                  !selected ||
                   !row?.processId ||
                   !userDetails?.id
                 ) {
