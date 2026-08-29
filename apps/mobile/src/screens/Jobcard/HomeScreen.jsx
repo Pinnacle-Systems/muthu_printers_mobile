@@ -500,6 +500,15 @@ export const HomeScreen = ({ navigation, route } = {}) => {
     }
   }, [takendjobdata]);
 
+  useEffect(()=>{
+        const unsubscribeFocus = navigation.addListener('focus', () => {
+               onRefresh()
+        })
+
+       return unsubscribeFocus;
+
+  },[navigation])
+
   // ── Taken job error ────────────────────────────────────────────────
   useEffect(() => {
     if (!isErrortaken) return;
@@ -519,6 +528,8 @@ export const HomeScreen = ({ navigation, route } = {}) => {
       onConfirm: () => dispatch(JOBCARD_API.util.invalidateTags(["JobCard"])),
     });
   }, [isErrortaken, takencarderror, dispatch, showModal]);
+  
+  
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handlePageChange = (newPage, newPerPage) => {
