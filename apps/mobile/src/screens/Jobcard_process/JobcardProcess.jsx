@@ -197,6 +197,8 @@ function JobCardProcess({ navigation, route }) {
     { skip: !id },
   );
 
+
+
   const jobcard = jobcardRes?.data;
   var punch_data = punch_datas ?? jobcardRes?.data?.punch_data;
   var machineId = machine_id ?? jobcardRes?.data?.punch_data?.Machineid;
@@ -267,28 +269,7 @@ function JobCardProcess({ navigation, route }) {
     !!punchId ||
     (!!punch_data?.id && !punch_data?.endTime);
 
-  useEffect(() => {
-    if (!isProcessStarted) return;
-
-    let totalCompleted = 0;
-    if (isCutAndSeal) {
-      totalCompleted = Object.values(splitQty).reduce(
-        (acc, val) => acc + Number(val || 0),
-        0,
-      );
-    } else {
-      totalCompleted = Number(completedqty) || 0;
-    }
-
-    const maxQty = Number(processqty) || 0;
-
-    if (totalCompleted > 0 && totalCompleted <= maxQty) {
-      const balance = maxQty - totalCompleted;
-      setwastageQty(balance.toString());
-    } else if (totalCompleted === 0) {
-      setwastageQty("");
-    }
-  }, [completedqty, splitQty, processqty, isProcessStarted, isCutAndSeal]);
+  // Removed automatic wastage calculation to allow manual entry
 
   const machineOptions = useMemo(
     () =>
@@ -409,7 +390,7 @@ function JobCardProcess({ navigation, route }) {
         if (!completedqty || !Number.isFinite(numCompletedQty))
           return Alert?.alert(
             "Missing",
-            "Please enter a valid completed qty.!",
+            "Please enter a valid completed qty.",
           );
         if (Number.isFinite(numProcessQty) && numProcessQty < numCompletedQty)
           return Alert?.alert("Qty", "You have entered Above Process Qty.!");
@@ -571,7 +552,6 @@ function JobCardProcess({ navigation, route }) {
         id: punch_id,
         productionlogid: punch_data?.id,
       })?.unwrap();
-      Alert?.alert("FILLL", JSON?.stringify(updatepause));
 
       if (Number(updatepause?.statusCode) === 1) {
         logError(
@@ -613,9 +593,8 @@ function JobCardProcess({ navigation, route }) {
       });
     }
   }
-
   useEffect(() => {
-    if (machineId && (!machineEndCheck || machineEndCheck !== "")) {
+    if (machineId && (!machineEndCheck || machineEndCheck === "")) {
       setSelectedMachine(machineId);
       setlockmachine(true);
     }
@@ -639,7 +618,8 @@ function JobCardProcess({ navigation, route }) {
     if (!update_data) return;
     const punch_id = update_data?.data?.addMain_punch_log;
     setpunchId(punch_id?.id);
-    if (punch_id?.id) setlockmachine(true);
+  
+    if (punch_id?.id ) setlockmachine(true);
   }, [update_data]);
 
   useEffect(() => {
@@ -1045,7 +1025,13 @@ function JobCardProcess({ navigation, route }) {
                   const num = Number(text);
                   // Block non-numeric input entirely and values exceeding processqty
                   if (!Number.isFinite(num)) return;
-                  if (num > Number(processqty)) return;
+                  
+                  const maxQty = Number(processqty) || 0;
+                  const currentWastage = Number(wastageQty) || 0;
+                  if (num + currentWastage > maxQty) {
+                    Alert.alert("Qty", "Total of Completed Qty and Wastage Qty cannot exceed Process Qty!");
+                    return;
+                  }
 
                   setcompletedqty(text);
                 }}
@@ -1084,6 +1070,20 @@ function JobCardProcess({ navigation, route }) {
               }
               const num = Number(text);
               if (!Number.isFinite(num)) return;
+              
+              const maxQty = Number(processqty) || 0;
+              let currentCompleted = 0;
+              if (isCutAndSeal) {
+                currentCompleted = Object.values(splitQty).reduce((acc, val) => acc + Number(val || 0), 0);
+              } else {
+                currentCompleted = Number(completedqty) || 0;
+              }
+              
+              if (num + currentCompleted > maxQty) {
+                Alert.alert("Qty", "Total of Completed Qty and Wastage Qty cannot exceed Process Qty!");
+                return;
+              }
+              
               setwastageQty(text);
             }}
             keyboardType="number"
@@ -1199,9 +1199,23 @@ function JobCardProcess({ navigation, route }) {
                   placeholder="Qty"
                   value={splitQty[sizeObj?.id]?.toString() || ""}
                   onChangeText={(text) => {
+                    if (text === "") {
+                      setSplitQty((prev) => ({ ...prev, [sizeObj?.id]: "" }));
+                      return;
+                    }
                     const num = Number(text);
-                    if (!Number.isFinite(num) && text !== "") return;
-                    setSplitQty((prev) => ({ ...prev, [sizeObj?.id]: text }));
+                    if (!Number.isFinite(num)) return;
+
+                    const newSplitQty = { ...splitQty, [sizeObj?.id]: text };
+                    const newTotalCompleted = Object.values(newSplitQty).reduce((acc, val) => acc + Number(val || 0), 0);
+                    const maxQty = Number(processqty) || 0;
+                    const currentWastage = Number(wastageQty) || 0;
+
+                    if (newTotalCompleted + currentWastage > maxQty) {
+                      Alert.alert("Qty", "Total of Completed Qty and Wastage Qty cannot exceed Process Qty!");
+                      return;
+                    }
+                    setSplitQty(newSplitQty);
                   }}
                   keyboardType="number"
                   autoCapitalize="none"
