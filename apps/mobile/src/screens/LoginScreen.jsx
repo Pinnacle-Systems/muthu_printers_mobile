@@ -305,14 +305,6 @@ const LoginScreen = ({ navigation }) => {
               />
             </View>
 
-            {/* Remember me */}
-            <AppCheckbox
-              label="Remember me"
-              value={rememberMe}
-              onChange={setRememberMe}
-              style={styles.checkbox}
-            />
-
             {/* Sign in button */}
             <AppButton
               label="Sign In"

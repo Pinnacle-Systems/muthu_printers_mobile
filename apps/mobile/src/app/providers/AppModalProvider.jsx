@@ -11,7 +11,7 @@ export const AppModalProvider = ({ children }) => {
     message:      '',
     type:         'warning',
     confirmLabel: 'OK',
-    cancelLabel:  'Cancel',
+    cancelLabel:  null,
     onConfirm:    null,
   });
 
@@ -20,7 +20,7 @@ export const AppModalProvider = ({ children }) => {
     message      = '',
     type         = 'warning',
     confirmLabel = 'OK',
-    cancelLabel  = 'Cancel',
+    cancelLabel  = null,
     onConfirm    = null,
   } = {}) => {
     setState({ visible: true, title, message, type, confirmLabel, cancelLabel, onConfirm });

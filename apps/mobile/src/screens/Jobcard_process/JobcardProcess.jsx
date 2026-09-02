@@ -126,7 +126,7 @@ const ActionButton = ({ label, onPress, disabled, color, c, styles }) => (
 );
 
 function JobCardProcess({ navigation, route }) {
-  const { jobCardDocId, id, dep, processId, machine_id, userId, punch_datas } =
+  const { jobCardDocId, id, dep, depName, processId, machine_id, userId, punch_datas, machineDetails } =
     route?.params ?? {};
   const dispatch = useDispatch();
   const [punchId, setpunchId] = useState(null);
@@ -140,6 +140,7 @@ function JobCardProcess({ navigation, route }) {
   const [qtyerror, setqtyerror] = useState("");
   const [splitQty, setSplitQty] = useState({});
   const [pauseModalOpen, setPauseModalOpen] = useState(false);
+  
   const [pauseReason, setPauseReason] = useState("");
   const [pauseQty, setPauseQty] = useState("");
   const [pauseRemarks, setPauseRemarks] = useState("");
@@ -271,18 +272,20 @@ function JobCardProcess({ navigation, route }) {
 
   // Removed automatic wastage calculation to allow manual entry
 
-  const machineOptions = useMemo(
-    () =>
-      departmentmachine_data?.data?.machines?.map((m) => ({
-        label: m?.name,
-        value: m?.id,
-        busy: m?.busy,
-        useby: m?.busy_by?.username + " - " + m?.JobCard?.docId,
-      })) ?? [],
+  const machineOptions = useMemo(() => {
+    let machines = departmentmachine_data?.data?.machines || [];
+    if (depName?.toUpperCase() === 'PRINTING' && machineDetails && machineDetails.length > 0) {
+     
+      machines =  machineDetails
+    }
 
-    [departmentmachine_data],
-    // [jobcard, dep],
-  );
+    return machines.map((m) => ({
+      label: m?.name,
+      value: m?.id,
+      busy: m?.busy,
+      useby: m?.busy_by?.username + " - " + m?.JobCard?.docId,
+    }));
+  }, [departmentmachine_data, machineDetails, depName]);
 
   const [selectedMachine, setSelectedMachine] = React.useState(null);
 
@@ -1154,7 +1157,16 @@ function JobCardProcess({ navigation, route }) {
           disabled={!canStart || resumable || !selectedMachine}
           c={c}
           styles={styles}
-          onPress={stopProcess}
+          onPress={() => {
+            Alert.alert(
+              "Stop Process",
+              "Are you sure you want to stop this process?",
+              [
+                { text: "No", style: "cancel" },
+                { text: "Yes", onPress: stopProcess },
+              ]
+            );
+          }}
         />
       </View>
 
