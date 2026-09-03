@@ -356,7 +356,7 @@ const formatStatus = (status) => {
     case "COMPLETED":
       return "COMPL";
     case "PARTIALLY_COMPLETED":
-      return "IN_PROG";
+      return "PART_COMPL";
     default:
       return str;
   }
