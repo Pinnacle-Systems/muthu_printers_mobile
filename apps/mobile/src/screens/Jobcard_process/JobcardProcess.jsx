@@ -335,7 +335,7 @@ function JobCardProcess({ navigation, route }) {
   async function startProcess() {
     try {
       var updatep = await updateprocess({
-        status: "IN_PROGRESS",
+        status: currentRoute?.status === "PARTIALLY_COMPLETED" ? "PARTIALLY_COMPLETED" : "IN_PROGRESS",
         jobcardId: id,
         processId: processId,
         flag: "START",
