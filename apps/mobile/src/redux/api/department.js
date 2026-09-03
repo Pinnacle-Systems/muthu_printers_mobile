@@ -10,9 +10,11 @@ const DEPARTMENT_API = createApi({
 
     // GET /departments
     getDepartments: builder.query({
-      query: (params) => ({ url: "/departments", method: "GET",params }),
+      query: (params) => ({ url: "/departments/mobile", method: "GET",params }),
       providesTags: ["Department"],
     }),
+
+    
 
     // GET /departments/:id
     getDepartment: builder.query({
