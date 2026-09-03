@@ -17,7 +17,7 @@ const AppWarningModal = memo(({
   title,
   message,
   confirmLabel = 'OK',
-  cancelLabel = 'Cancel',
+  cancelLabel = null,
   showCancel,
 }) => {
   const { current_theme: c, theme } = useThemeProvider();
@@ -156,7 +156,7 @@ const AppWarningModal = memo(({
             { gap: spacing.sm },
           ]}>
 
-            {shouldShowCancel && (
+            {shouldShowCancel && cancelLabel && (
               <TouchableOpacity
                 onPress={onClose}
                 style={[

@@ -109,7 +109,7 @@ const Body = memo(
         widthPercent={90}
         disabled={dropdown?.isLoading}
         options={dropdown?.options}
-        label="Select Department"
+        label="Select Department *"
         value={dropdown?.selected}
         onChange={(option) => {
           dropdown?.setSelected(option ? option.value : null);
@@ -120,16 +120,17 @@ const Body = memo(
       />
 
       {/* ── Tab Toggle ── */}
-      <View
-        style={{
-          flexDirection: "row",
-          width: wp(90),
-          borderRadius: 8,
-          borderWidth: 1,
-          borderColor: c.border,
-          overflow: "hidden",
-        }}
-      >
+      {dropdown?.selected && (
+        <View
+          style={{
+            flexDirection: "row",
+            width: wp(90),
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: c.border,
+            overflow: "hidden",
+          }}
+        >
         {TABS.map((tab) => {
           const isActive = activeTab === tab.key;
           return (
@@ -156,9 +157,10 @@ const Body = memo(
           );
         })}
       </View>
+      )}
 
       {/* ── Clear Filter Banner ── */}
-      {scannedJobCardFilter && (
+      {scannedJobCardFilter && dropdown?.selected && (
         <View style={{
           flexDirection: "row",
           width: wp(90),
@@ -180,7 +182,13 @@ const Body = memo(
       )}
 
       {/* ── Conditional Table ── */}
-      {activeTab === "pending" ? (
+      {!dropdown?.selected ? (
+        <View style={{ marginTop: 40, alignItems: "center" }}>
+          <AppText variant="md" style={{ color: c.text, fontWeight: "500", textAlign: "center", opacity: 0.7 }}>
+            Department selection is required
+          </AppText>
+        </View>
+      ) : activeTab === "pending" ? (
         <>
           <AppTable
             key="pending"
@@ -202,6 +210,16 @@ const Body = memo(
             rowStyle={table?.rowStyle}
             onRowPress={(row) => {
               if (!dropdown?.selected) return onWarning();
+
+              if (
+                dropdown?.depName?.toUpperCase() === "PRINTING" &&
+                (!row?.machineDetails || row?.machineDetails?.length === 0)
+              ) {
+                return Alert.alert(
+                  "Warning",
+                  "This process is not currently mapped to the assigned machine(s). Please contact your supervisor or the concerned officer for further assistance"
+                );
+              }
 
               const highPriorityJob = table?.data?.find(
                 (j) =>
@@ -226,8 +244,10 @@ const Body = memo(
                   jobCardDocId: row?.jobCardId,
                   id: row?.id,
                   dep: dropdown?.selected,
+                  depName: dropdown?.depName,
                   processId: row?.processId,
                   userId: user?.id,
+                  machineDetails: row?.machineDetails,
                 });
               };
 
@@ -289,8 +309,12 @@ const Body = memo(
   ),
 );
 
-const convertDepartmentData = (data) =>
-  data?.map((dep) => ({ label: dep?.name, value: dep?.id }));
+const convertDepartmentData = (data) => {
+  if (!data) return [];
+  return data
+    .map((dep) => ({ label: dep?.name, value: dep?.id }))
+    .sort((a, b) => (a.label || "").localeCompare(b.label || ""));
+};
 
 const convertJobCardData = (data, department , scannedJobCardFilter) =>
   data
@@ -462,41 +486,41 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   }, []);
 
   // ── Taken job navigation ───────────────────────────────────────────
-  useEffect(() => {
-    if (!takendjobdata?.data) return;
+  // useEffect(() => {
+  //   if (!takendjobdata?.data) return;
 
-    const row = takendjobdata.data;
-    // Check if row actually exists and contains a valid job
-    if (Array.isArray(row) && row.length === 0) return;
-    if (typeof row === "object" && Object.keys(row).length === 0) return;
-    if (!row.jobCardId) return;
+  //   const row = takendjobdata.data;
+  //   // Check if row actually exists and contains a valid job
+  //   if (Array.isArray(row) && row.length === 0) return;
+  //   if (typeof row === "object" && Object.keys(row).length === 0) return;
+  //   if (!row.jobCardId) return;
 
-    if (hasNavigated.current) return; // ✅ skip if already navigated
-    hasNavigated.current = true;
+  //   if (hasNavigated.current) return; // ✅ skip if already navigated
+  //   hasNavigated.current = true;
 
-    if (!completed) {
-      if (
-        !row?.jobCardId ||
-        !row?.departmentid ||
-        !row?.processRouteId ||
-        !row?.Userid
-      ) {
-        Alert.alert(
-          "Incomplete Data",
-          "Taken job card data is missing required fields.",
-        );
-        return;
-      }
-      navigation?.navigate("JOB", {
-        id: row?.jobCardId,
-        dep: row?.departmentid,
-        processId: row?.processRouteId,
-        userId: row?.Userid,
-        machine_Id: row?.Machineid,
-        punch_datas: row,
-      });
-    }
-  }, [takendjobdata]);
+  //   if (!completed) {
+  //     if (
+  //       !row?.jobCardId ||
+  //       !row?.departmentid ||
+  //       !row?.processRouteId ||
+  //       !row?.Userid
+  //     ) {
+  //       Alert.alert(
+  //         "Incomplete Data",
+  //         "Taken job card data is missing required fields.",
+  //       );
+  //       return;
+  //     }
+  //     navigation?.navigate("JOB", {
+  //       id: row?.jobCardId,
+  //       dep: row?.departmentid,
+  //       processId: row?.processRouteId,
+  //       userId: row?.Userid,
+  //       machine_Id: row?.Machineid,
+  //       punch_datas: row,
+  //     });
+  //   }
+  // }, [takendjobdata]);
 
   useEffect(()=>{
         const unsubscribeFocus = navigation.addListener('focus', () => {
@@ -517,9 +541,9 @@ export const HomeScreen = ({ navigation, route } = {}) => {
     });
 
     showModal({
-      title: "Previous Process",
+      title: "JobCard Process",
       message:
-        "Previous process couldn't be fetched. Please select manually or retry.",
+        "process couldn't be fetched. Please select manually or retry.",
       type: "warning",
       confirmLabel: "Retry",
       cancelLabel: "Cancel",
@@ -754,17 +778,20 @@ export const HomeScreen = ({ navigation, route } = {}) => {
                   (fdata) => String(fdata.id) === String(scandata?.id),
                 );
                 setShowQrcode(false);
-                if (!row) return Alert?.alert("No Job", "Invalid job card QR!");
+                if (!row) return  showWarning(
+                  "No Job",
+                  "Job card is invalid. Please scan a valid job card or select department to contiue.",
+                 );
 
                 if (
                   !row?.id ||
                   !row?.processId ||
                   !userDetails?.id
                 ) {
-                  return Alert?.alert(
+                  return showWarning(
                     "Missing Data",
                     "Incomplete job data. Please check department selection and try again.",
-                  );
+                 ); 
                 }
 
                 setScannedJobCardFilter(row?.jobCardId);
@@ -773,10 +800,11 @@ export const HomeScreen = ({ navigation, route } = {}) => {
                 logError("HOME SCREEN", "QR_SCAN", "PARSE_ERROR", error, {
                   rawData: data,
                 });
-                Alert?.alert(
+
+                showWarning(
                   "Invalid QR Code",
                   "The scanned QR code is not a valid Job Card format.",
-                );
+                 ); 
               }
             }}
             onError={(err) =>
