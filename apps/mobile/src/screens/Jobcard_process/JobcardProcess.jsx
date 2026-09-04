@@ -144,6 +144,7 @@ function JobCardProcess({ navigation, route }) {
   const [pauseReason, setPauseReason] = useState("");
   const [pauseQty, setPauseQty] = useState("");
   const [pauseRemarks, setPauseRemarks] = useState("");
+  const [isFinishing, setIsFinishing] = useState(false);
 
   const PAUSE_REASONS = useMemo(
     () => [
@@ -195,7 +196,7 @@ function JobCardProcess({ navigation, route }) {
     error: errorjobcard,
   } = useGetJobCardQuery(
     { id, userid: userId, processRouteId: processId },
-    { skip: !id },
+    { skip: !id || isFinishing },
   );
 
 
@@ -335,7 +336,7 @@ function JobCardProcess({ navigation, route }) {
   async function startProcess() {
     try {
       var updatep = await updateprocess({
-        status: "IN_PROGRESS",
+        status: currentRoute?.status === "PARTIALLY_COMPLETED" ? "PARTIALLY_COMPLETED" : "IN_PROGRESS",
         jobcardId: id,
         processId: processId,
         flag: "START",
@@ -453,6 +454,7 @@ function JobCardProcess({ navigation, route }) {
       setwastageQty("");
       setRemarks("");
       // refreshjobcard()
+      setIsFinishing(true);
       dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
       navigation?.navigate("HOME", { completed: true });
     } catch (error) {
