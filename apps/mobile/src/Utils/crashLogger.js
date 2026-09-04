@@ -32,8 +32,10 @@ export const setUserContext = (user) => {
 
   setUserId(cl, String(user?.id ?? ''));
   setAttributes(cl, {
-    user_name: String(user?.username ?? 'unknown'),
-    user_role: String(user?.role     ?? 'staff'),
+    user_name: String(user?.username),
+    user_roleId: String(user?.roleId),
+    user_roleGroup: String(user?.roleGroup),
+    user_roleName: String(user?.roleName),
   });
 };
 

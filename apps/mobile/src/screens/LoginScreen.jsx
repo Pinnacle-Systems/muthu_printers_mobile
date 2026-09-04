@@ -177,7 +177,6 @@ const LoginScreen = ({ navigation }) => {
   const handleLogin = async () => {
     if (!validate()) return;
     setLoading(true);
-
     try {
       logEvent(`Login attempt: ${username}`);
 
@@ -200,12 +199,17 @@ const LoginScreen = ({ navigation }) => {
         finyearId : finyearId?.id,
         id        : userInfo?.id       || 1001,
         username  : userInfo?.username || username,
+        roleId     : userInfo?.role?.id ,
+        roleName     : userInfo?.role?.name ,
+        roleGroup    : userInfo?.role?.type
       });
 
       setUserContext({
-        id       : userInfo?.id       || 1001,
+        id       : userInfo?.id  ,
         username : userInfo?.username || username,
-        role     : userInfo?.role     || 'staff',
+        roleId     : userInfo?.role?.id ,
+        roleName     : userInfo?.role?.name ,
+        roleGroup    : userInfo?.role?.type
       });
 
       // Crucial Fix: Set the token state LAST. 
