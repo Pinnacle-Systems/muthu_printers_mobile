@@ -1,8 +1,12 @@
-export function isWithinWindow(startHour, endHour) {
-  const hour = new Date().getHours(); // 0–23, local time
-  if (startHour <= endHour) {
-    return hour >= startHour && hour < endHour;
+export function isWithinWindow(startHour, endHour, startMinute = 0, endMinute = 0) {
+  const now = new Date();
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
+  const startTotalMinutes = startHour * 60 + startMinute;
+  const endTotalMinutes = endHour * 60 + endMinute;
+
+  if (startTotalMinutes <= endTotalMinutes) {
+    return currentTotalMinutes >= startTotalMinutes && currentTotalMinutes < endTotalMinutes;
   }
-  // window wraps past midnight, e.g. 18 → 24 (treated as 18–23 + 0)
-  return hour >= startHour || hour < endHour;
+  // window wraps past midnight
+  return currentTotalMinutes >= startTotalMinutes || currentTotalMinutes < endTotalMinutes;
 }
