@@ -565,7 +565,7 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   useInterval(
     () => {
 
-        if (isWithinWindow(16, 24)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
+        if (isWithinWindow(18, 24)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
 
         triggerGetNotificationMachines()
           .unwrap()
