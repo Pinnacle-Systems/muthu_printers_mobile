@@ -26,6 +26,7 @@ import { useDepartmentHooks } from "../../services/hooks/useDepartmentHooks.jsx"
 import { useJobCardHooks } from "../../services/hooks/useJobCardHooks.jsx";
 import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
+import LongRunningMachinesModal from "../../components/LongRunningMachinesModal.jsx";
 import { AuthContext } from "../../app/providers/AppProviders.jsx";
 import { useDispatch } from "react-redux";
 import { Pencil, X, ExternalLink } from "lucide-react-native";
@@ -36,7 +37,6 @@ import { useUpdateCurrentProcessMutation } from "../../redux/api/process.js";
 import { logError } from "../../Utils/crashLogger.js";
 import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useInterval } from "../../services/hooks/useInterval.jsx";
 import { isWithinWindow } from "../../Utils/isWithinWindow.js";
 import {
@@ -395,6 +395,8 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   const { showModal, showWarning } = useAppModal();
   const { userDetails } = useContext(AuthContext);
   const [isRunning, setIsRunning] = useState(true);
+  const [machineAlertModalVisible, setMachineAlertModalVisible] = useState(false);
+  const [machineAlertData, setMachineAlertData] = useState([]);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -563,38 +565,23 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   useInterval(
     () => {
 
-        if (isWithinWindow(17, 24)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
+        if (isWithinWindow(16, 24)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
 
         triggerGetNotificationMachines()
           .unwrap()
           .then((res) => {
             const machines = res?.data || [];
             if (machines.length > 0) {
-              const message = machines
-                .map(
-                  (m) =>
-                    `•  ${m.machineName} (${m.process}) This Machine Is Running - ${m.runningDuration}\n  Used By : ${m.user} | JobCard: ${m.jobCard}`,
-                )
-                .join("\n\n");
-
-              Alert.alert("Machines Running Alert", message, [
-                {
-                  text: "OK",
-                  onPress: () => {
-                    machines.forEach((machine) => {
-                      if (machine.machineId) {
-                        markMachineViewed({
-                           machineId: machine.machineId,
-                           userId:userDetails?.id
-                          }).catch((err) =>
-                          console.log("Failed to mark viewed", err),
-                        );
-                        setIsRunning(false)
-                      }
-                    });
-                  },
-                },
-              ]);
+              const mappedMachines = machines.map((m) => ({
+                machineName: m.machineName,
+                operator: m.user,
+                jobCard: m.jobCard,
+                duration: m.runningDuration,
+                since: m.startTime || m.process || '',
+                machineId: m.machineId
+              }));
+              setMachineAlertData(mappedMachines);
+              setMachineAlertModalVisible(true);
             }
           })
           .catch((err) => console.log("Error fetching notifications", err));
@@ -818,6 +805,21 @@ export const HomeScreen = ({ navigation, route } = {}) => {
     },
   ];
 
+  const handleCloseMachineAlert = useCallback(() => {
+    setMachineAlertModalVisible(false);
+    machineAlertData.forEach((machine) => {
+      if (machine.machineId) {
+        markMachineViewed({
+           machineId: machine.machineId,
+           userId: userDetails?.id
+          }).catch((err) =>
+          console.log("Failed to mark viewed", err),
+        );
+      }
+    });
+    setIsRunning(false);
+  }, [machineAlertData, markMachineViewed, userDetails]);
+
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, radius, typography, iconSize, Screens } = theme;
   const { wp, hp } = Screens;
@@ -826,6 +828,15 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   // ── Render ─────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
+      <LongRunningMachinesModal 
+        visible={machineAlertModalVisible}
+        machines={machineAlertData}
+        onClose={handleCloseMachineAlert}
+        onViewAll={() => {
+          // You can add logic to navigate to a full list view here
+          handleCloseMachineAlert();
+        }}
+      />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
