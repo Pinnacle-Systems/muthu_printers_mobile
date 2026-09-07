@@ -26,6 +26,7 @@ import { useDepartmentHooks } from "../../services/hooks/useDepartmentHooks.jsx"
 import { useJobCardHooks } from "../../services/hooks/useJobCardHooks.jsx";
 import QRScanner from "../../components/QRScanner.jsx";
 import AppModal from "../../components/AppModal.jsx";
+import LongRunningMachinesModal from "../../components/LongRunningMachinesModal.jsx";
 import { AuthContext } from "../../app/providers/AppProviders.jsx";
 import { useDispatch } from "react-redux";
 import { Pencil, X, ExternalLink } from "lucide-react-native";
@@ -36,10 +37,16 @@ import { useUpdateCurrentProcessMutation } from "../../redux/api/process.js";
 import { logError } from "../../Utils/crashLogger.js";
 import { useAppModal } from "../../app/providers/AppModalProvider.jsx";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useInterval } from "../../services/hooks/useInterval.jsx";
+import { isWithinWindow } from "../../Utils/isWithinWindow.js";
+import {
+  useLazyGetNotificationMachinesQuery,
+  useMarkMachineViewedMutation,
+} from "../../redux/api/machine.js";
+import { allowedNotifiOfficer } from "../../constant/notificationOfficers.js";
 
 const Header = memo(
-  ({ setshowscanner,onRefresh, iconSize, spacing, wp, hp, selected, c }) => (
+  ({ setshowscanner, onRefresh, iconSize, spacing, wp, hp, selected, c }) => (
     <View
       style={{
         height: hp(20),
@@ -60,7 +67,7 @@ const Header = memo(
       <AppButton
         style={{ width: wp(90) }}
         onPress={() => {
-          onRefresh?.()
+          onRefresh?.();
           setshowscanner(true);
         }}
         label="Scan Job Card"
@@ -131,51 +138,56 @@ const Body = memo(
             overflow: "hidden",
           }}
         >
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab.key;
-          return (
-            <Pressable
-              key={tab.key}
-              onPress={() => setActiveTab(tab.key)}
-              style={{
-                flex: 1,
-                paddingVertical: 10,
-                alignItems: "center",
-                backgroundColor: isActive ? c.primary : c.surface,
-              }}
-            >
-              <AppText
-                variant="sm"
+          {TABS.map((tab) => {
+            const isActive = activeTab === tab.key;
+            return (
+              <Pressable
+                key={tab.key}
+                onPress={() => setActiveTab(tab.key)}
                 style={{
-                  color: isActive ? c.background : c.text,
-                  fontWeight: isActive ? "600" : "400",
+                  flex: 1,
+                  paddingVertical: 10,
+                  alignItems: "center",
+                  backgroundColor: isActive ? c.primary : c.surface,
                 }}
               >
-                {tab.label}
-              </AppText>
-            </Pressable>
-          );
-        })}
-      </View>
+                <AppText
+                  variant="sm"
+                  style={{
+                    color: isActive ? c.background : c.text,
+                    fontWeight: isActive ? "600" : "400",
+                  }}
+                >
+                  {tab.label}
+                </AppText>
+              </Pressable>
+            );
+          })}
+        </View>
       )}
 
       {/* ── Clear Filter Banner ── */}
       {scannedJobCardFilter && dropdown?.selected && (
-        <View style={{
-          flexDirection: "row",
-          width: wp(90),
-          backgroundColor: c.primary + '15',
-          padding: 10,
-          borderRadius: 8,
-          alignItems: "center",
-          justifyContent: "space-between",
-          borderColor: c.primary,
-          borderWidth: 1,
-        }}>
+        <View
+          style={{
+            flexDirection: "row",
+            width: wp(90),
+            backgroundColor: c.primary + "15",
+            padding: 10,
+            borderRadius: 8,
+            alignItems: "center",
+            justifyContent: "space-between",
+            borderColor: c.primary,
+            borderWidth: 1,
+          }}
+        >
           <AppText style={{ color: c.text, flex: 1, fontWeight: "600" }}>
             Filtered by JobCard: {scannedJobCardFilter}
           </AppText>
-          <TouchableOpacity onPress={() => setScannedJobCardFilter(null)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            onPress={() => setScannedJobCardFilter(null)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <X size={20} color={c.text} />
           </TouchableOpacity>
         </View>
@@ -184,8 +196,16 @@ const Body = memo(
       {/* ── Conditional Table ── */}
       {!dropdown?.selected ? (
         <View style={{ marginTop: 40, alignItems: "center" }}>
-          <AppText variant="md" style={{ color: c.text, fontWeight: "500", textAlign: "center", opacity: 0.7 }}>
-            Department selection is required
+          <AppText
+            variant="md"
+            style={{
+              color: c.text,
+              fontWeight: "500",
+              textAlign: "center",
+              opacity: 0.7,
+            }}
+          >
+           {scannedJobCardFilter ?  `Jobcard ${scannedJobCardFilter} scanned. Please select a department to continue`  : "Department selection is required"} 
           </AppText>
         </View>
       ) : activeTab === "pending" ? (
@@ -217,7 +237,7 @@ const Body = memo(
               ) {
                 return Alert.alert(
                   "Warning",
-                  "This process is not currently mapped to the assigned machine(s). Please contact your supervisor or the concerned officer for further assistance"
+                  "This process is not currently mapped to the assigned machine(s). Please contact your supervisor or the concerned officer for further assistance",
                 );
               }
 
@@ -316,12 +336,17 @@ const convertDepartmentData = (data) => {
     .sort((a, b) => (a.label || "").localeCompare(b.label || ""));
 };
 
-const convertJobCardData = (data, department , scannedJobCardFilter) =>
+const convertJobCardData = (data, department, scannedJobCardFilter) =>
   data
     ?.filter((fdata) => {
-        const dept = fdata?.processRoute?.Process;
-      if(scannedJobCardFilter && department) return (String(fdata?.docId) === String(scannedJobCardFilter)) && (String(dept?.departmentId) === String(department))
-      if(scannedJobCardFilter) return String(fdata?.docId) === String(scannedJobCardFilter)
+      const dept = fdata?.processRoute?.Process;
+      if (scannedJobCardFilter && department)
+        return (
+          String(fdata?.docId) === String(scannedJobCardFilter) &&
+          String(dept?.departmentId) === String(department)
+        );
+      if (scannedJobCardFilter)
+        return String(fdata?.docId) === String(scannedJobCardFilter);
       if (!department) return true;
       return String(dept?.departmentId) === String(department);
     })
@@ -369,6 +394,9 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   const { completed } = route?.params ?? {};
   const { showModal, showWarning } = useAppModal();
   const { userDetails } = useContext(AuthContext);
+  const [isRunning, setIsRunning] = useState(true);
+  const [machineAlertModalVisible, setMachineAlertModalVisible] = useState(false);
+  const [machineAlertData, setMachineAlertData] = useState([]);
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("pending");
 
@@ -432,10 +460,14 @@ export const HomeScreen = ({ navigation, route } = {}) => {
 
   // ✅ fixed — both jobCardData and selected in deps
   const jobs = useMemo(() => {
-    let baseJobs = convertJobCardData(jobCardData?.data, selected , scannedJobCardFilter) ?? [];
+    let baseJobs =
+      convertJobCardData(jobCardData?.data, selected, scannedJobCardFilter) ??
+      [];
 
     if (scannedJobCardFilter) {
-      baseJobs = baseJobs.filter((job) => String(job.jobCardId) === String(scannedJobCardFilter));
+      baseJobs = baseJobs.filter(
+        (job) => String(job.jobCardId) === String(scannedJobCardFilter),
+      );
     }
 
     baseJobs.sort((a, b) => {
@@ -455,9 +487,12 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   }, [jobCardData, selected, localStatusUpdates, scannedJobCardFilter]);
 
   const completed_jobs = useMemo(() => {
-    let baseComp = convertCompletedJobCardData(compl_jobCardData?.data, selected) ?? [];
+    let baseComp =
+      convertCompletedJobCardData(compl_jobCardData?.data, selected) ?? [];
     if (scannedJobCardFilter) {
-      baseComp = baseComp.filter((job) => String(job.jobCardId) === String(scannedJobCardFilter));
+      baseComp = baseComp.filter(
+        (job) => String(job.jobCardId) === String(scannedJobCardFilter),
+      );
     }
     return baseComp;
   }, [compl_jobCardData, selected, scannedJobCardFilter]);
@@ -522,14 +557,50 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   //   }
   // }, [takendjobdata]);
 
-  useEffect(()=>{
-        const unsubscribeFocus = navigation.addListener('focus', () => {
-               onRefresh()
-        })
+  const [triggerGetNotificationMachines] =
+    useLazyGetNotificationMachinesQuery();
+  const [markMachineViewed] = useMarkMachineViewedMutation();
+ 
 
-       return unsubscribeFocus;
+  useInterval(
+    () => {
 
-  },[navigation])
+        if (isWithinWindow(18, 21, 15, 0)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
+
+        triggerGetNotificationMachines()
+          .unwrap()
+          .then((res) => {
+            const machines = res?.data || [];
+            if (machines.length > 0) {
+              const mappedMachines = machines.map((m) => ({
+                machineName: m.machineName,
+                operator: m.user,
+                jobCard: m.jobCard,
+                duration: m.runningDuration,
+                since: m.startTime || m.process || '',
+                machineId: m.machineId
+              }));
+              setMachineAlertData(mappedMachines);
+              setMachineAlertModalVisible(true);
+            }
+          })
+          .catch((err) => console.log("Error fetching notifications", err));
+        }
+     
+      if(!userDetails?.roleGroup && !isWithinWindow(17, 24) || allowedNotifiOfficer?.includes(userDetails?.roleGroup) === false){
+        setIsRunning(false)
+      }
+    },
+    isRunning ? 60 * 1000 : null,
+  );
+
+  useEffect(() => {
+    const unsubscribeFocus = navigation.addListener("focus", () => {
+      onRefresh();
+    });
+
+    return unsubscribeFocus;
+  }, [navigation]);
 
   // ── Taken job error ────────────────────────────────────────────────
   useEffect(() => {
@@ -542,16 +613,13 @@ export const HomeScreen = ({ navigation, route } = {}) => {
 
     showModal({
       title: "JobCard Process",
-      message:
-        "process couldn't be fetched. Please select manually or retry.",
+      message: "process couldn't be fetched. Please select manually or retry.",
       type: "warning",
       confirmLabel: "Retry",
       cancelLabel: "Cancel",
       onConfirm: () => dispatch(JOBCARD_API.util.invalidateTags(["JobCard"])),
     });
   }, [isErrortaken, takencarderror, dispatch, showModal]);
-  
-  
 
   // ── Handlers ───────────────────────────────────────────────────────
   const handlePageChange = (newPage, newPerPage) => {
@@ -737,15 +805,38 @@ export const HomeScreen = ({ navigation, route } = {}) => {
     },
   ];
 
+  const handleCloseMachineAlert = useCallback(() => {
+    setMachineAlertModalVisible(false);
+    machineAlertData.forEach((machine) => {
+      if (machine.machineId) {
+        markMachineViewed({
+           machineId: machine.machineId,
+           userId: userDetails?.id
+          }).catch((err) =>
+          console.log("Failed to mark viewed", err),
+        );
+      }
+    });
+    setIsRunning(false);
+  }, [machineAlertData, markMachineViewed, userDetails]);
+
   const { current_theme: c, theme } = useThemeProvider();
   const { spacing, radius, typography, iconSize, Screens } = theme;
   const { wp, hp } = Screens;
   const styles = makeStyles(c, spacing, radius, typography);
 
-
   // ── Render ─────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
+      <LongRunningMachinesModal 
+        visible={machineAlertModalVisible}
+        machines={machineAlertData}
+        onClose={handleCloseMachineAlert}
+        onViewAll={() => {
+          // You can add logic to navigate to a full list view here
+          handleCloseMachineAlert();
+        }}
+      />
       <ScrollView
         contentContainerStyle={{ flexGrow: 1 }}
         refreshControl={
@@ -778,20 +869,17 @@ export const HomeScreen = ({ navigation, route } = {}) => {
                   (fdata) => String(fdata.id) === String(scandata?.id),
                 );
                 setShowQrcode(false);
-                if (!row) return  showWarning(
-                  "No Job",
-                  "Job card is invalid. Please scan a valid job card or select department to contiue.",
-                 );
+                if (!row)
+                  return showWarning(
+                    "No Job",
+                    "Job card is invalid. Please scan a valid job card or select department to contiue.",
+                  );
 
-                if (
-                  !row?.id ||
-                  !row?.processId ||
-                  !userDetails?.id
-                ) {
+                if (!row?.id || !row?.processId || !userDetails?.id) {
                   return showWarning(
                     "Missing Data",
                     "Incomplete job data. Please check department selection and try again.",
-                 ); 
+                  );
                 }
 
                 setScannedJobCardFilter(row?.jobCardId);
@@ -804,7 +892,7 @@ export const HomeScreen = ({ navigation, route } = {}) => {
                 showWarning(
                   "Invalid QR Code",
                   "The scanned QR code is not a valid Job Card format.",
-                 ); 
+                );
               }
             }}
             onError={(err) =>

@@ -568,18 +568,12 @@ function JobCardProcess({ navigation, route }) {
         );
         return Alert?.alert(
           "Failed to Resume",
-          updatepause?.message ||
-            "Unable to resume — this machine is currently allocated to another employee.",
-
+          (updatepause?.message ||
+            "Unable to resume — this machine is currently allocated to another employee.") +
+            "\n\nIf you need to stop this process, please fill in the completed quantity and use the Stop button below.",
           [
             {
-              text: "Cancel",
-              onPress: () => console.log("Cancelled"),
-              style: "cancel",
-            },
-            {
-              text: "Stop Process",
-              onPress: () => stopProcess(),
+              text: "OK",
               style: "default",
             },
           ],
@@ -592,9 +586,11 @@ function JobCardProcess({ navigation, route }) {
       dispatch(JOBCARD_API.util.invalidateTags(["JobCard"]));
       // navigation?.navigate("HOME")
     } catch (error) {
-      Alert?.alert("Failed", "Resume Process Failed to Proceed.");
-      logError("Job Card Process", "PauseProcess", "pause-Process", error, {
-        message: "Punch Failed",
+      const errMsg =
+        error?.data?.message || "Resume Process Failed to Proceed.";
+      Alert?.alert("Failed", errMsg);
+      logError("Job Card Process", "ResumeProcess", "RESUME_ERROR", error, {
+        message: "Resume Failed",
       });
     }
   }
@@ -1156,7 +1152,7 @@ function JobCardProcess({ navigation, route }) {
         <ActionButton
           label="Stop"
           color={c.btnprimary ?? "#22C55E"}
-          disabled={!canStart || resumable || !selectedMachine}
+          disabled={!canStart || !isProcessStarted || !selectedMachine}
           c={c}
           styles={styles}
           onPress={() => {
