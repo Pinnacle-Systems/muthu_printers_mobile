@@ -562,37 +562,44 @@ export const HomeScreen = ({ navigation, route } = {}) => {
   const [markMachineViewed] = useMarkMachineViewedMutation();
  
 
-  useInterval(
-    () => {
+  const checkMachineAlerts = useCallback(() => {
+    if (
+      isWithinWindow(18, 21, 15, 0) &&
+      allowedNotifiOfficer?.includes(userDetails?.roleGroup)
+    ) {
+      triggerGetNotificationMachines()
+        .unwrap()
+        .then((res) => {
+          const machines = res?.data || [];
+          if (machines.length > 0) {
+            const mappedMachines = machines.map((m) => ({
+              machineName: m.machineName,
+              operator: m.user,
+              jobCard: m.jobCard,
+              duration: m.runningDuration,
+              since: m.startTime || m.process || "",
+              machineId: m.machineId,
+            }));
+            setMachineAlertData(mappedMachines);
+            setMachineAlertModalVisible(true);
+          }
+        })
+        .catch((err) => console.log("Error fetching notifications", err));
+    }
 
-        if (isWithinWindow(18, 21, 15, 0)  && allowedNotifiOfficer?.includes(userDetails?.roleGroup)) {
+    if (
+      (!userDetails?.roleGroup && !isWithinWindow(17, 24)) ||
+      allowedNotifiOfficer?.includes(userDetails?.roleGroup) === false
+    ) {
+      setIsRunning(false);
+    }
+  }, [triggerGetNotificationMachines, userDetails?.roleGroup]);
 
-        triggerGetNotificationMachines()
-          .unwrap()
-          .then((res) => {
-            const machines = res?.data || [];
-            if (machines.length > 0) {
-              const mappedMachines = machines.map((m) => ({
-                machineName: m.machineName,
-                operator: m.user,
-                jobCard: m.jobCard,
-                duration: m.runningDuration,
-                since: m.startTime || m.process || '',
-                machineId: m.machineId
-              }));
-              setMachineAlertData(mappedMachines);
-              setMachineAlertModalVisible(true);
-            }
-          })
-          .catch((err) => console.log("Error fetching notifications", err));
-        }
-     
-      if(!userDetails?.roleGroup && !isWithinWindow(17, 24) || allowedNotifiOfficer?.includes(userDetails?.roleGroup) === false){
-        setIsRunning(false)
-      }
-    },
-    isRunning ? 60 * 1000 : null,
-  );
+  useEffect(() => {
+    checkMachineAlerts();
+  }, [checkMachineAlerts]);
+
+  useInterval(checkMachineAlerts, isRunning ? 60 * 1000 : null);
 
   useEffect(() => {
     const unsubscribeFocus = navigation.addListener("focus", () => {
