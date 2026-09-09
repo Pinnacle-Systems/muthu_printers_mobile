@@ -325,6 +325,14 @@ const LoginScreen = ({ navigation }) => {
           {/* END card */}
 
           {/* Footer */}
+          <Text
+            style={[
+              styles.versionText,
+              { color: c.textMuted, fontSize: typography.sm?.fontSize },
+            ]}
+          >
+            Version: 1.0
+          </Text>
           <Text style={[styles.footerText, { color: c.textMuted, fontSize: typography.sm?.fontSize }]}>
             © 2026 Pinnacle Systems. All rights reserved.
           </Text>
@@ -419,6 +427,10 @@ const styles = StyleSheet.create({
   },
 
   // ── Footer
+  versionText: {
+    marginBottom: 4,
+    textAlign: 'center',
+  },
   footerText: {
     textAlign: 'center',
   },
